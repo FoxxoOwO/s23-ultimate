@@ -5,7 +5,7 @@ S23_LSPosed_Module/dex/
 S23_LSPosed_Module/staging/
 S23_LSPosed_Module/*.apk
 
-# Signed output
+# Signed output (release assets, not tracked)
 *.apk
 *.apk.idsig
 !S23_LSPosed_Module/app/src/main/resources/**/*.apk
