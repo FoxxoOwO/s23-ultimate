@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="xposed_scope">
+        <item>system</item>
+        <item>android</item>
+        <item>com.sec.android.app.camera</item>
+        <item>com.android.settings</item>
+        <item>com.android.systemui</item>
+        <item>com.samsung.android.incallui</item>
+        <item>com.samsung.android.dialer</item>
+        <item>com.samsung.android.app.telephonyui</item>
+        <item>com.android.phone</item>
+    </string-array>
+</resources>

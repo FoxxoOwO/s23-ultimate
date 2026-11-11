@@ -1,0 +1,77 @@
+# Build artefacts
+S23_LSPosed_Module/build_output/
+S23_LSPosed_Module/classes/
+S23_LSPosed_Module/dex/
+S23_LSPosed_Module/staging/
+S23_LSPosed_Module/*.apk
+
+# Signed output
+*.apk
+*.apk.idsig
+!S23_LSPosed_Module/app/src/main/resources/**/*.apk
+
+# Keystore (generate your own, see README)
+debug.keystore
+*.jks
+*.keystore
+
+# Large binaries and working material (not part of the source tree)
+*.zip
+*.dex
+*.jar
+!libxposed-api-102.jar
+libxposed-api-102.aar
+*.so
+jadx_*/
+secsettings_dex/
+camera_dex/
+cam_dex/
+staging_dfs/
+S23_Custom_Enhancer/
+S23_Custom_Enhancer.zip
+V4_Lite/
+V4.2_Debloated_Alireza/
+oneui-design-ref/
+SamsungCamera.apk
+SecSettings.apk
+SettingsProvider.apk
+SystemUI.apk
+disableflagsecure.apk
+framework.jar
+services.jar
+
+# Frames, screenshots and device dumps from reverse engineering
+*.png
+*.jpg
+*.xml
+!S23_LSPosed_Module/app/src/main/**/*.xml
+!S23_LSPosed_Module/app/src/main/res/**/*.xml
+oneui-design-ref/
+*.txt
+
+# Scratch scripts
+fast_scan.py
+find_*.py
+quick_scan.ps1
+scan.ps1
+search_*.py
+decompile_zm.py
+
+# Nested git repos / external reference clones
+OneUIX/
+OneUIX_*.kt
+C2SoftApvEnc.cpp
+
+# libxposed API is a build dependency, not source (see README for download)
+libxposed-api-102.jar
+libxposed-api-102.aar
+
+# Local agent tooling / screenshots
+.tools/
+.screens/
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.iml
+.idea/

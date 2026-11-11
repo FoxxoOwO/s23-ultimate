@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="primary">#2388FF</color>
+    <color name="primary_dark">#000000</color>
+    <color name="accent">#2388FF</color>
+    <color name="background">#000000</color>
+    <color name="surface">#1C1C1E</color>
+    <color name="surface_variant">#26282E</color>
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#8E8E93</color>
+    <color name="text_muted">#636366</color>
+    <color name="category_header">#2388FF</color>
+    <color name="divider">#2A2C30</color>
+    
+    <!-- One UI Specific Colors -->
+    <color name="oneui_bg">#000000</color>
+    <color name="oneui_card_bg">#1C1C1E</color>
+    <color name="oneui_card_stroke">#2A2C32</color>
+    <color name="oneui_accent">#2388FF</color>
+    <color name="oneui_accent_light">#4CA1FF</color>
+    <color name="oneui_text_primary">#FFFFFF</color>
+    <color name="oneui_text_secondary">#8E8E93</color>
+    <color name="oneui_divider">#27292E</color>
+    <color name="oneui_status_green">#10B981</color>
+    <color name="oneui_status_green_bg">#132D20</color>
+    <color name="oneui_status_green_stroke">#1C4D35</color>
+    <color name="oneui_spinner_bg">#25272D</color>
+    <color name="oneui_spinner_stroke">#353840</color>
+    <color name="oneui_switch_track_on">#2388FF</color>
+    <color name="oneui_switch_track_off">#3C3F46</color>
+    <color name="oneui_switch_thumb_on">#FFFFFF</color>
+    <color name="oneui_switch_thumb_off">#9A9FA8</color>
+</resources>

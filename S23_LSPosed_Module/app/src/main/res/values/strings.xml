@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">S23 Enhancer</string>
+    <string name="app_subtitle">Systémové a kamerové úpravy pro Galaxy S23 Ultra</string>
+    <string name="footer_note">Změny se projeví po restartu cílové aplikace. Modul vyžaduje aktivní LSPosed.</string>
+
+    <!-- Sekce -->
+    <string name="sec_camera">Fotoaparát</string>
+    <string name="sec_display">Displej</string>
+    <string name="sec_system">Systém</string>
+
+    <!-- Fotoaparát -->
+    <string name="title_camera_log_video">Log Video</string>
+    <string name="desc_camera_log_video">Aktivuje nativní Log profil v Pro Video pro maximální dynamický rozsah a color grading.</string>
+    <string name="title_camera_4k60_lenses">4K60 přepínání objektivů</string>
+    <string name="desc_camera_4k60_lenses">Umožňuje přepínání 0,6x, 1x, 3x a 10x objektivu při 4K 60 fps bez digitálního ořezu.</string>
+    <string name="title_camera_jpeg_100">100% kvalita</string>
+    <string name="title_camera_shutter_mute">Vypnutí zvuku závěrky</string>
+    <string name="desc_camera_shutter_mute">Umožní ztlumit zvuk závěrky fotoaparátu i v regionech, kde ho Samsung vynucuje (CSC zámek). Volba Zvuk závěrky se objeví v nastavení fotoaparátu.</string>
+    <string name="desc_camera_jpeg_100">Ukládá JPEG fotografie s kvalitou 100 % a vypíná dodatečnou kompresi.</string>
+
+    <!-- Displej -->
+    <string name="title_display_outdoor">Venkovní režim</string>
+    <string name="desc_display_outdoor">Zpřístupní přepínač Venkovní režim v Nastavení &gt; Displej. Režim se zapíná tam, ne zde.</string>
+    <string name="title_display_screen_mode">Profily displeje</string>
+    <string name="desc_display_screen_mode">Odemkne profesionální profily AMOLED Cinema (DCI-P3) a AMOLED Photo (Adobe RGB).</string>
+    <string name="row_active_profile">Aktivní profil</string>
+    <string name="title_display_screen_timeout">Screen timeouty</string>
+    <string name="desc_display_screen_timeout">Odemkne 30 minut, 1 hodinu a možnost Nikdy v nabídce vypnutí obrazovky.</string>
+    <string name="row_screen_timeout">Vypnutí obrazovky</string>
+    <string name="title_display_action_timeout">Čas pro provedení akce</string>
+    <string name="desc_display_action_timeout">Nastaví dobu, po kterou systém čeká na potvrzení akce u asistivních funkcí.</string>
+    <string name="row_action_timeout">Doba čekání</string>
+    <string name="title_display_ead">Adaptivní barevný tón (EAD)</string>
+    <string name="desc_display_ead">Vynutí podporu adaptivního barevného tónu displeje v Nastavení.</string>
+    <string name="title_display_fonts">Odemčení fontů</string>
+    <string name="desc_display_fonts">Povolí instalaci a použití vlastních systémových fontů bez kontroly podpisu.</string>
+
+    <!-- Systém -->
+    <string name="title_call_recording">Nahrávání hovorů</string>
+    <string name="desc_call_recording">Aktivuje nativní tlačítko nahrávání hovorů v aplikaci Telefon.</string>
+    <string name="title_wifi_passwords">Zobrazení hesel</string>
+    <string name="desc_wifi_passwords">Zobrazí uložená hesla Wi-Fi bez ověření zámku obrazovky.</string>
+    <string name="title_flag_secure">Obejití screenshotu</string>
+    <string name="desc_flag_secure">Povolí snímky obrazovky i v aplikacích chráněných příznakem FLAG_SECURE.</string>
+    <string name="title_telemetry">Zakázání telemetrie</string>
+    <string name="desc_telemetry">Vypne odesílání crash logů a systémových diagnostických záznamů.</string>
+
+    <!-- Sdílení -->
+
+    <!-- Baterie -->
+    <string name="sec_battery">Baterie</string>
+    <string name="batt_level">Úroveň</string>
+    <string name="batt_status">Stav</string>
+    <string name="batt_source">Napájení</string>
+    <string name="batt_remaining">Zbývá do plného nabití</string>
+    <string name="batt_health">Zdraví</string>
+    <string name="batt_temp">Teplota</string>
+    <string name="batt_voltage">Napětí</string>
+    <string name="batt_current">Proud</string>
+    <string name="batt_power">Výkon</string>
+    <string name="batt_charge">Nabití</string>
+    <string name="batt_cycles">Cykly</string>
+    <string name="batt_tech">Technologie</string>
+    <string name="batt_protect">Ochrana baterie</string>
+    <string name="batt_status_charging">Nabíjí se</string>
+    <string name="batt_status_discharging">Vybíjí se</string>
+    <string name="batt_status_full">Nabitá</string>
+    <string name="batt_status_not_charging">Nenabíjí se</string>
+    <string name="batt_status_unknown">Neznámý</string>
+    <string name="batt_health_good">Dobrá</string>
+    <string name="batt_health_overheat">Přehřátá</string>
+    <string name="batt_health_dead">Vadná</string>
+    <string name="batt_health_over_voltage">Přepětí</string>
+    <string name="batt_health_failure">Závada</string>
+    <string name="batt_health_cold">Podchlazená</string>
+    <string name="batt_health_unknown">Neznámé</string>
+    <string name="batt_src_ac">Síťový adaptér</string>
+    <string name="batt_src_usb">USB</string>
+    <string name="batt_src_wireless">Bezdrátově</string>
+    <string name="batt_src_dock">Dok</string>
+    <string name="batt_src_none">Bez napájení</string>
+    <string name="batt_protect_adaptive">Adaptivní (%1$d %%)</string>
+    <string name="batt_protect_on">Zapnuto (%1$d %%)</string>
+    <string name="batt_protect_off">Vypnuto</string>
+    <string name="batt_hours_minutes">%1$d h %2$d min</string>
+    <string name="batt_minutes">%1$d min</string>
+
+    <string name="title_battery_info">Podrobné informace o baterii</string>
+    <string name="desc_battery_info">Odemkne v Nastavení &gt; Baterie &gt; Informace o baterii řádky Zdraví baterie, Počet cyklů, Datum prvního použití a Datum výroby jako na novějších modelech. Hodnoty se čtou z privátních EFS uzlů, takže mohou zůstat prázdné.</string>
+
+    <!-- Profily displeje -->
+    <string name="mode_vivid">Živý</string>
+    <string name="mode_natural">Přírodní</string>
+    <string name="mode_cinema">Kino AMOLED</string>
+    <string name="mode_photo">Fotografie AMOLED</string>
+    <string name="mode_basic">Základní</string>
+
+    <!-- Screen timeouty -->
+    <string name="timeout_15s">15 sekund</string>
+    <string name="timeout_30s">30 sekund</string>
+    <string name="timeout_1m">1 minuta</string>
+    <string name="timeout_2m">2 minuty</string>
+    <string name="timeout_5m">5 minut</string>
+    <string name="timeout_10m">10 minut</string>
+    <string name="timeout_30m">30 minut</string>
+    <string name="timeout_1h">1 hodina</string>
+    <string name="timeout_never">Nikdy</string>
+
+    <!-- Čas pro provedení akce -->
+    <string name="action_default">Výchozí</string>
+    <string name="action_5s">5 sekund</string>
+    <string name="action_10s">10 sekund</string>
+    <string name="action_20s">20 sekund</string>
+    <string name="action_30s">30 sekund</string>
+    <string name="action_1m">1 minuta</string>
+    <string name="action_2m">2 minuty</string>
+    <string name="action_5m">5 minut</string>
+    <string name="action_custom">Vlastní…</string>
+    <string name="action_custom_title">Vlastní čas (sekundy)</string>
+    <string name="action_custom_hint">Např. 45</string>
+    <string name="action_set">Nastavit</string>
+
+    <!-- Stav a hlášky -->
+    <string name="status_supported">Podporováno</string>
+    <string name="status_test_device">Testovací zařízení</string>
+    <string name="toast_saved">Nastavení uloženo</string>
+    <string name="toast_error">Chyba nastavení: %1$s</string>
+    <string name="toast_invalid_value">Zadejte platné číslo</string>
+    <string name="toast_screen_mode">Profil displeje: %1$s</string>
+    <string name="toast_screen_timeout">Vypnutí obrazovky: %1$s</string>
+    <string name="toast_action_timeout">Doba akce: %1$s</string>
+
+    <!-- Quick Settings -->
+    <string name="tile_outdoor_mode">Venkovní režim</string>
+    <string name="tile_outdoor_disabled">Vypnuto v S23 Enhanceru</string>
+</resources>

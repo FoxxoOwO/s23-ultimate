@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="AppTheme" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:colorPrimary">@color/oneui_accent</item>
+        <item name="android:colorPrimaryDark">#000000</item>
+        <item name="android:colorAccent">@color/oneui_accent</item>
+        <item name="android:windowBackground">@color/oneui_bg</item>
+        <item name="android:colorBackground">@color/oneui_bg</item>
+        <item name="android:navigationBarColor">#000000</item>
+        <item name="android:statusBarColor">#000000</item>
+        <item name="android:textColorPrimary">@color/oneui_text_primary</item>
+        <item name="android:textColorSecondary">@color/oneui_text_secondary</item>
+        <item name="android:colorControlActivated">@color/oneui_accent</item>
+        <item name="android:colorControlNormal">#4E525C</item>
+    </style>
+</resources>
