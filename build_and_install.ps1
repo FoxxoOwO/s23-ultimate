@@ -2,24 +2,26 @@
 $ErrorActionPreference = "Stop"
 
 
+$rootDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+
 $sdk = $env:ANDROID_HOME
 if (-not $sdk) { $sdk = $env:ANDROID_SDK_ROOT }
-if (-not $sdk) { $sdk = "C:\Users\Teresa\AppData\Local\Android\Sdk" }
+if (-not $sdk) { $sdk = Join-Path $env:LOCALAPPDATA "Android\Sdk" }
 if (-not (Test-Path $sdk)) { Write-Error "Android SDK not found (set ANDROID_HOME)"; exit 1 }
 
 $buildTools = (Get-ChildItem "$sdk\build-tools" -Directory | Sort-Object Name -Descending | Select-Object -First 1).FullName
 $platform = if (Test-Path "$sdk\platforms\android-36\android.jar") { "$sdk\platforms\android-36\android.jar" } else { (Get-ChildItem "$sdk\platforms" -Directory | Sort-Object Name -Descending | Select-Object -First 1).FullName + "\android.jar" }
-$libxposed = "D:\repositories\s23ultimate\libxposed-api-102.jar"
+$libxposed = Join-Path $rootDir "libxposed-api-102.jar"
 $adb = "$sdk\platform-tools\adb.exe"
 
-$projDir = "D:\repositories\s23ultimate\S23_LSPosed_Module"
+$projDir = Join-Path $rootDir "S23_LSPosed_Module"
 $srcDir = "$projDir\app\src\main\java"
 $resDir = "$projDir\app\src\main\res"
 $resourcesDir = "$projDir\app\src\main\resources"
 $outDir = "$projDir\build_output"
-$sevenZip = "C:\Program Files\7-Zip\7z.exe"
-$outApk = "D:\repositories\s23ultimate\S23_LSPosed_Enhancer.apk"
-$keystore = "D:\repositories\s23ultimate\debug.keystore"
+$sevenZip = Join-Path $env:ProgramFiles "7-Zip\7z.exe"
+$outApk = Join-Path $rootDir "S23_LSPosed_Enhancer.apk"
+$keystore = Join-Path $rootDir "debug.keystore"
 
 Write-Host "--- 1. Cleaning build directory ---"
 if (Test-Path $outDir) { Remove-Item -Recurse -Force $outDir }
