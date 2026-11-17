@@ -58,15 +58,30 @@ Původně vznikl jako Magisk/KernelSU překryv (`S23_Custom_Enhancer`, modifikac
 
 ---
 
-## 3. Funkce a hooky (15 položek)
+## 3. Funkce a hooky (16 položek)
 
 ### A. Fotoaparát (`com.sec.android.app.camera`)
 | # | Funkce | Pref klíč | Hook |
 | :-- | :--- | :--- | :--- |
 | 1 | **Log Video** v Pro Video | `pref_camera_log_video` | `floating_feature` tagy `SUPPORT_LOG_VIDEO`, `SUPPORT_FRONT_LOG_VIDEO` |
-| 2 | **4K60 přepínání objektivů** (0,6x / 1x / 3x / 10x, Seamless Zoom) | `pref_camera_4k60_lenses` | `ZoomFeature.isPhysicalZoomSupported`, `CameraResolution.getCamcorderPhysicalZoomRecordingAvailableFeature`, `CameraSettings.get(AUTO_LENS_SWITCHING)`, tele-zoom tagy a `FloatTag`/`IntegerTag` mapy |
+| 2 | **4K60 přepínání objektivů** (0,6x / 1x / 3x / 10x, Seamless Zoom) | `pref_camera_4k60_lenses` | `ZoomFeature.isPhysicalZoomSupported`, mapa camcorder features (`e5.g.n(Le5.l)` → `seamless-zoom-support=true`), `CameraSettings.get(AUTO_LENS_SWITCHING)`, tele-zoom tagy a `FloatTag`/`IntegerTag` mapy |
 | 3 | **100% kvalita JPEG** | `pref_camera_jpeg_100` | `CaptureRequest` JPEG_QUALITY=100, `Bitmap.compress(…,100,…)`, `ro.media.enc.jpeg.quality=100` |
 | 4 | **Vypnutí zvuku závěrky** | `pref_camera_shutter_mute` | `EnumMap.put` tag `SUPPORT_SHUTTER_SOUND_MENU` → `true`, `Settings.System.getInt(…, "csc_pref_camera_forced_shuttersound_key", …)` → `0`, a v `CameraAudioManager.onResume()` vynulování pole `mForceShutterSound` (obfuskované `a8.v.p`) |
+| 16 | **4K120 ve Zpomaleném pohybu** | `pref_camera_4k120_slowmo` | stejný hook mapy camcorder features: pro `BACK/FRONT_CAMCORDER_RESOLUTION_FEATURE_MAP_3840X2160_120FPS` přidá `slow_motion` do `supported-mode` a `value=true` |
+
+### Poznámka: obfuskované třídy kamery v One UI 9 (funkce 2 a 16)
+
+Kamera 17.x na One UI 9 je **celá obfuskovaná** — `com.sec.android.app.camera.util.CameraResolution` ani `CameraResolutionMap` v dexech neexistují (hook na ně padal na `ClassNotFoundException`). Per-resolution atributy z `camera-feature.xml` se čtou takto (zjištěno z `dexdump` staženého `/system/priv-app/SamsungCamera/SamsungCamera.apk`, `classes2.dex`):
+
+| Prvek | Obfuskovaný název | Význam |
+| :--- | :--- | :--- |
+| globální mapa features | `Le5/i;` pole `a` (`HashMap<String,Map>`) | celý parsovaný `camera-feature.xml`, klíč = jméno tagu |
+| výchozí (prázdná) mapa | `Le5/i;.c()Ljava/util/HashMap;` | fallback pro resoluce bez záznamu (vše `false`) |
+| čtečka mapy pro tag | `Le5/g;.n(Le5/l;)Ljava/util/Map;` → `Le5/f;.k` (`EnumMap`) | vrací mapu atributů pro daný `CAMCORDER_RESOLUTION_FEATURE_MAP_*`; pro přední kameru jiná metoda stejné třídy |
+| starší varianta | `Le5/f;.r1(Le5/l;)Ljava/util/Map;` | totéž přes `Le5/i.a` |
+| resolution → tag | `Lte/f0;.a(Ll9/a2;)` / `.c(Ll9/a2;)` (back/front), `Lte/c0;.v(ILl9/a2;)` | mapování `Resolution` na tag enum; `te.c0.v` čte `seamless-zoom-support`, `u1` staví seznam slow-motion resolucí |
+
+Modul proto **nehookuje podle jmen tříd/metod, ale podle signatury**: v `e5.g` (fallback `e5.f`, `com.sec.android.app.camera.util.CameraResolutionMap`) najde všechny metody s jediným `enum` parametrem a návratovým `Map` a obalí je. Tag enum konstanty (`BACK_CAMCORDER_RESOLUTION_FEATURE_MAP_3840X2160_60FPS`) jsou stabilní, takže se patchuje podle `((Enum) arg).name()`. Vrácená mapa je kopie do `HashMap` (originál může být sdílený/read-only).
 
 ### Poznámka k vypnutí zvuku závěrky (funkce 4)
 
@@ -301,17 +316,20 @@ Skript: vyčistí `build_output` → `aapt2 compile/link` → `javac --release 1
 
 | Komponenta | Stav | Poznámka |
 | :--- | :--- | :--- |
-| **HookEntry (14 funkcí + baterie)** | ✅ Hotovo | Ostatní hooky odstraněny; experimentální Quick Share / Now brief / Now nudge odebrány jako nefunkční |
+| **HookEntry (15 funkcí + baterie)** | ✅ Hotovo | Ostatní hooky odstraněny; experimentální Quick Share / Now brief / Now nudge odebrány jako nefunkční |
 | **One UI komponentová vrstva** | ✅ Hotovo | 10 tříd v `ui.oneui` (včetně `OneUiInfoRow`), bez AndroidX/Compose |
 | **Karta Baterie** | ✅ Hotovo | Read-only, 12 řádků, živě z `ACTION_BATTERY_CHANGED` |
 | **Podrobné informace o baterii** | ✅ Hotovo | Gate `BatteryInfoUtils.isAvailableBatteryRegulatory`; na S23 se objeví Zdraví 95 %, 834 cyklů, data výroby a prvního použití |
-| **MainActivity + layout** | ✅ Hotovo | 4 sekce (Baterie, Fotoaparát, Displej, Systém), 15 přepínačů, 3 výběrové řádky, dialogová volba |
+| **MainActivity + layout** | ✅ Hotovo | 4 sekce (Baterie, Fotoaparát, Displej, Systém), 16 přepínačů, 3 výběrové řádky, dialogová volba |
 | **Scope modulu** | ✅ Zúženo | `system`, `android`, Kamera, Nastavení, SystemUI, InCallUI, Dialer, TelephonyUI, Phone |
 | **Build pipeline** | ✅ Funkční | Generuje podepsanou `S23_LSPosed_Enhancer.apk` |
 | **Ověření UI** | ✅ Emulátor | Android 15 / 1080×2400, bez pádů, přepínače se ukládají |
 | **Ověření na S23 Ultra** | ✅ | SM-S918B, One UI 9.0; kanál `s23enh_*` v `Settings.Global` ověřen (4K60 přepínač i Log Video se propisují, bez restartu) |
 | **Quick Share / Now brief / Now nudge** | ❌ Odebráno | Nejdou na S23 rozchodit (chybí AWDL v HAL, resp. PDE) → přepínače odstraněny z aplikace |
 | **Gesto v rohu pro asistenta** | ❌ Odebráno | Tři brány v SystemUI odemknutelné, ale `swipe-up` monitor launcheru krade input → přepínač odstraněn |
+| **Kandidáti K1–K8** | 🔍 Průzkum | Ověřeno na zařízení 2026-11-14 (sekce 9); K2 a K4 rozpracované (viz níže) |
+| **K4 – 4K120 slow-motion** | ✅ Implementováno | Hook `e5.g` (mapa camcorder features) nasazen a v logcatu ověřen (`Patched BACK_CAMCORDER_RESOLUTION_FEATURE_MAP_3840X2160_60FPS seamless-zoom=true`); vizuální kontrola 4K v seznamu Zpomaleného pohybu čeká |
+| **K2 – aux objektivy** | 🟡 Připraveno, neaktivní | `S23_Custom_Enhancer/system.prop` + `service.sh` rozšiřují `vendor.camera.aux.packagelist` a restartují `cameraserver`; projeví se až po načtení KernelSU modulu (= reboot, který je zakázaný), LSPosed to hookovat nemůže |
 
 ---
 
@@ -319,3 +337,56 @@ Skript: vyčistí `build_output` → `aapt2 compile/link` → `javac --release 1
 - 🔴 **Zařízení se nesmí restartovat!** Root je v tethered / nestálém režimu; restart by znamenal ztrátu rootu.
 - 🟡 Po reinstalaci modulu stačí pro načtení změn **vynutit ukončení cílové aplikace** (`am force-stop com.sec.android.app.camera` / `com.android.settings`), restart systému není potřeba.
 - 🟡 Změna v aplikaci se do hooků propíše okamžitě (zrcadlo `s23enh_*` v `Settings.Global`), ale cílová aplikace si hodnotu načte při svém startu.
+
+---
+
+## 9. Kandidáti na další odemčení (průzkum 2026-11-14, wireless ADB)
+
+Průzkum proběhl na živém zařízení přes `adb connect 192.168.0.139:38425`. Shell z ADB **není root** (`uid=2000(shell)`, `/system/bin/su` neexistuje, `/data/adb` = Permission denied) — KernelSU (`me.weishu.kernelsu`) je nainstalovaný, ale ADB shell nemá root práva. Vše níže je proto ověřené jen čtením props / `dumpsys` / `/optics` / `/vendor/etc`, ne zápisem.
+
+**Základní fakta o zařízení**
+
+| Vlastnost | Hodnota |
+| :--- | :--- |
+| Build | `CP2A.260605.016.S918BXXUAGZIF`, Android 17, One UI `90000` |
+| Produkt | `dm3qxxx` / `SM-S918B` |
+| CSC | **`TPA` (Panama)**, `ro.csc.country_code=PANAMA` |
+| SIM1 | Vodafone CZ (230-03), LTE band 3, 20 MHz, `isNrAvailable=false` |
+| eSIM / UWB / satelit | `nfc.product.support.esim=1`, `android.hardware.uwb`, `android.hardware.telephony.satellite` + `persist.radio.support.satellite=1` |
+| IMS | `persist.radio.is_vonr_enabled_0/1=false`, `ril.ims.ltevoicesupport=1,0`, IWLAN `registrationState=UNKNOWN` |
+
+### 9.1 Co už na zařízení je (tag-injection nemá cenu)
+
+`/system/etc/floating_feature.xml` (331 řádků / 656 tagů) + `/vendor/etc/floating_feature.xml` (213 řádků / 420 tagů) už obsahují téměř všechny „flagship" tagy, takže cesta „přidat řádek do floating_feature" je vyčerpaná:
+
+| Tag | Hodnota |
+| :--- | :--- |
+| `COMMON_SUPPORT_DESKTOP_WINDOWING` | `TRUE` |
+| `COMMON_CONFIG_DYN_RESOLUTION_CONTROL` | `WQHD,FHD,HD` |
+| `FRAMEWORK_SUPPORT_EAGLE_EYE` | `TRUE` |
+| `SYSTEMUI_SUPPORT_BRIEF_NOTIFICATION` | `TRUE` |
+| `FRAMEWORK_CONFIG_SCREEN_RECORDER_ITEM` | `-pip` |
+| `SETTINGS_SUPPORT_FUNCTION_KEY_MENU` | `TRUE` |
+| `COMMON_SUPPORT_WEARABLE_GLASSES` / `COMMON_SUPPORT_AI_AGENT` | `TRUE` |
+| `FRAMEWORK_CONFIG_AGENT_WITH_PDE` / `FRAMEWORK_CONFIG_NOW_NUDGE_VERSION` | `0` (PDE chybí → Now brief mrtvý, viz 3.G) |
+
+Chybějící tagy: `COMMON_CONFIG_MULTIWINDOW_TRAY`, `WLAN_SUPPORT_SECURE_WIFI`, `COMMON_SUPPORT_HIGH_PERFORMANCE_MODE`, `FRAMEWORK_SUPPORT_SMOOTH_SCROLL`, `COMMON_CONFIG_DEX_MODE` / `COMMON_SUPPORT_DEX_*` (DeX přesto funguje, takže absence tagu ≠ vypnutá funkce).
+
+### 9.2 Kandidáti (seřazeno podle poměru přínos / riziko)
+
+| # | Funkce | Zjištěná branka | Jak | Riziko |
+| :-- | :--- | :--- | :--- | :--- |
+| K1 | **VoWiFi / VoNR / VoLTE pro lokální síť** | CSC `TPA`; `persist.radio.is_vonr_enabled_0/1=false`; IWLAN `registrationState=UNKNOWN` (žádné Wi-Fi calling); `preferred_network_mode1=9` | hook `SemCscFeature.getString` na `CscFeature_RIL_SupportVolte`, `CscFeature_Common_SupportWifiCall`, `CscFeature_RIL_SupportVoNr` + `Settings.Global` přepínače (stejná technika jako nahrávání hovorů) | Střední — modem carrier policy nemusí NR/IWLAN pustit;pravděpodobně restart RIL / IMS |
+| K2 | **Aux objektivy pro 3rd-party appky** (0,6x / 3x / 10x) | `vendor.camera.aux.packagelist=org.codeaurora.snapcam` — jen Snapcam; HAL zná ID `52` (tele), `54` (tele2), `56` (wide), `58` (uw), logická `20` | `setprop`/`resetprop` rozšíření packagelist, nebo hook v `cameraserver` | Nízké (jen rozšíří seznam), ale prop je `vendor.*` → potřeba root |
+| K3 | **8K HDR10 + 8K na všech objektivech** | stock `camera-feature.xml`: `BACK_CAMCORDER_RESOLUTION_FEATURE_MAP_7680X4320` má `hdr10="false"`, `physical-zoom-supported="false"`; dřívější overlay měl `hdr10="true"`, `physical-zoom-supported="true"` | injektáž do mapy camcorder resolutions (`CameraResolution`/`Le5`), stejný pattern jako 4K60 | Střední — teplo/bitrate, 8K60 nepodporuje HW |
+| K4 | **4K120 v slow-motion + 120fps aspect varianty** | stock `..._3840X2160_120FPS` má `supported-mode="pro_video"` (bez `slow_motion`); overlay přidával `3840X1644_120FPS`, `1920X824_120FPS`, `1920X1080_240FPS` s `hdr10="true"` | stejná injektáž do resolution mapy + `supported-mode` | Střední |
+| K5 | **Přední kamera 4K60 s HDR / touch AF** | stock `FRONT_CAMCORDER_RESOLUTION_FEATURE_MAP_3840X2160_60FPS`: `touch-af="false"`, `external-storage-support="false"`; overlay `2320X1080` vs stock `2336X1080` | injektáž do front mapy | Nízké |
+| K6 | **Přepínač rozlišení FHD/HD (úspora baterie)** | tag `COMMON_CONFIG_DYN_RESOLUTION_CONTROL=WQHD,FHD,HD` existuje, ale `settings get system display_resolution` = `null` a Nastavení řádek nenabízí → gate je v `Rune`/controlleru | odemknout `SecDisplayResolutionPreferenceController` (availability) | Nízké |
+| K7 | **„Enhanced processing" (výkonový režim)** | chybí `COMMON_SUPPORT_HIGH_PERFORMANCE_MODE` i `SYSTEM_SUPPORT_ENHANCED_CPU_RESPONSIVENESS` | injektáž tagu + `getAvailabilityStatus` v Battery settings | Střední (throttling/teplo) |
+| K8 | **Screen recorder bez PiP / s vyšším rozlišením** | `FRAMEWORK_CONFIG_SCREEN_RECORDER_ITEM=-pip` (PiP už vypnuté) | zbývá jen 1080p/60 a bitrate — hook `ScreenRecorderConfig` | Nízké |
+
+### 9.3 Co je mrtvé (nezkoušet)
+
+- **Now brief / Now nudge** — `FRAMEWORK_CONFIG_AGENT_WITH_PDE=0`, PDE na S23 není (potvrzeno znovu 2026-11-14).
+- **Satelitní SOS** — `android.hardware.telephony.satellite` je deklarovaný a `persist.radio.support.satellite=1`, ale Snapdragon 8 Gen 2 nemá NTN modem; `dumpsys telephony.registry` hlásí `isUsingNonTerrestrialNetwork=false` a `satelliteTechnology=NT_RADIO_TECHNOLOGY_UNKNOWN`.
+- **CSC soubory jako zdroj pravdy** — `/optics/configs/carriers/single/<CSC>/conf/system/cscfeature.xml` je na tomto firmwaru **binární/komprimovaný** (TPA má 487 B, neplaintext) a firmware obsahuje jen americké CSC (ANC, ARO, BVO, …), žádné EU (XEZ/ETL/O2C/VDC). Pro srovnání „co má EU navíc" je potřeba CSC z jiného firmwaru.

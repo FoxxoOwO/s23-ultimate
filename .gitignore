@@ -75,3 +75,6 @@ libxposed-api-102.aar
 Thumbs.db
 *.iml
 .idea/
+
+# lokální průzkumné výpisy (.probe/*.xml, props, features)
+.probe/

@@ -39,6 +39,9 @@ public class HookEntry extends XposedModule {
     /** Camera: allow muting the shutter sound regardless of the regional CSC restriction. */
     private static final String PREF_CAM_SHUTTER_MUTE = "pref_camera_shutter_mute";
 
+    /** Camera: expose UHD 120 fps in Slow motion (stock feature map keeps it pro_video only). */
+    private static final String PREF_CAM_4K120_SLOWMO = "pref_camera_4k120_slowmo";
+
     /** Battery info: unlock the EU-regulatory rows (health, cycles, dates) in Settings. */
     private static final String PREF_BATTERY_INFO = "pref_system_battery_info";
 
@@ -46,7 +49,9 @@ public class HookEntry extends XposedModule {
     private volatile boolean mCamLogVideo = true;
     private volatile boolean mCamLenses = true;
     private volatile boolean mCamShutterMute = true;
+    private volatile boolean mCam4k120SlowMo = true;
     private volatile int mForcedTagCount;
+    private int mCamResolutionPatchCount;
 
     /**
      * Cross-process pref channel. LSPosed remote prefs are not available in every hooked
@@ -213,6 +218,32 @@ public class HookEntry extends XposedModule {
     private static final String CAM_TELE_ZOOM_TAG = "BACK_TELE_CAMERA_ZOOM_LEVEL";
     private static final String CAM_SECOND_TELE_ZOOM_TAG = "BACK_SECOND_TELE_CAMERA_ZOOM_LEVEL";
 
+    // ------------------------------------------------- per-resolution camcorder feature map
+
+    /**
+     * Obfuscated holders of the parsed camera-feature.xml map. One UI 9 (camera 17.x) exposes the
+     * per-resolution camcorder map through e5.g.n(Le5.l) / e5.f.r1(Le5.l); older builds used
+     * CameraResolutionMap#getBackCamcorderFeature. The class names are version specific, the tag
+     * enum constant names (BACK_CAMCORDER_RESOLUTION_FEATURE_MAP_...) are not, so the methods are
+     * discovered by signature (one enum argument, Map result) instead of by name.
+     */
+    private static final String[] FEATURE_MAP_CLASS_CANDIDATES = {
+        "e5.g", "e5.f", "com.sec.android.app.camera.util.CameraResolutionMap"
+    };
+
+    private static final String BACK_UHD_60 =
+            "BACK_CAMCORDER_RESOLUTION_FEATURE_MAP_3840X2160_60FPS";
+    private static final String BACK_UHD_120 =
+            "BACK_CAMCORDER_RESOLUTION_FEATURE_MAP_3840X2160_120FPS";
+    private static final String FRONT_UHD_120 =
+            "FRONT_CAMCORDER_RESOLUTION_FEATURE_MAP_3840X2160_120FPS";
+
+    /** Keys of the "CAMCORDER_RESOLUTION_FEATURE_MAP_*" entry (CameraResolution.FEATURE_INDEX_*). */
+    private static final String FEATURE_SEAMLESS_ZOOM = "seamless-zoom-support";
+    private static final String FEATURE_SUPPORTED_MODE = "supported-mode";
+    private static final String FEATURE_VALUE = "value";
+    private static final String MODE_SLOW_MOTION = "slow_motion";
+
     /** Returns the forced boolean for a device-feature tag, or null to leave the original value. */
     private Boolean forcedBooleanTag(String tag) {
         if (tag == null) return null;
@@ -283,6 +314,7 @@ public class HookEntry extends XposedModule {
         mCamLogVideo = isPref("pref_camera_log_video", true);
         mCamLenses = isPref("pref_camera_4k60_lenses", true);
         mCamShutterMute = isPref(PREF_CAM_SHUTTER_MUTE, true);
+        mCam4k120SlowMo = isPref(PREF_CAM_4K120_SLOWMO, true);
         try {
             hookAllMethods(EnumMap.class, "put", chain -> {
                 List<Object> args = chain.getArgs();
@@ -314,7 +346,88 @@ public class HookEntry extends XposedModule {
             Log.e(TAG, "Failed to hook EnumMap.put", t);
         }
 
+        hookCameraResolutionMap(cl);
+    }
 
+    /**
+     * Per-resolution camcorder feature map. Stock camera-feature.xml keeps
+     * BACK_CAMCORDER_RESOLUTION_FEATURE_MAP_3840X2160_60FPS at seamless-zoom-support="false", and
+     * Camera#isSeamlessZoomAvailable() returns exactly that flag while recording — which is why the
+     * camera falls back to remosaic crop zoom and the lens buttons disappear in UHD 60 fps.
+     * The 120 fps entry is likewise supported-mode="pro_video" only, so it never shows up in Slow
+     * motion. Both are patched here instead of on disk (the map is what every getter reads).
+     */
+    private void hookCameraResolutionMap(ClassLoader cl) {
+        Class<?> mapCls = null;
+        for (String name : FEATURE_MAP_CLASS_CANDIDATES) {
+            try {
+                mapCls = cl.loadClass(name);
+                Log.i(TAG, "Using camcorder feature map holder " + name);
+                break;
+            } catch (Throwable ignored) {
+            }
+        }
+        if (mapCls == null) {
+            Log.w(TAG, "Camcorder feature map holder not found, 4K60 lenses / 4K120 stay stock");
+            return;
+        }
+
+        int count = 0;
+        for (Method m : mapCls.getDeclaredMethods()) {
+            Class<?>[] params = m.getParameterTypes();
+            if (params.length != 1 || !params[0].isEnum()) continue;
+            if (!java.util.Map.class.isAssignableFrom(m.getReturnType())) continue;
+            try {
+                hook(m).intercept(chain -> patchCamcorderFeature(chain, chain.proceed()));
+                count++;
+            } catch (Throwable t) {
+                Log.w(TAG, "Failed to hook " + m.getName() + ": " + t.getMessage());
+            }
+        }
+        Log.i(TAG, "Hooked " + count + " camcorder feature map getters on " + mapCls.getName()
+                + " (4k60Lenses=" + mCamLenses + ", 4k120SlowMotion=" + mCam4k120SlowMo + ")");
+    }
+
+    /**
+     * Returns a copy of the per-resolution feature map with our overrides applied. The original may
+     * be shared/unmodifiable, so entries are copied into a plain HashMap; callers only read from it.
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private Object patchCamcorderFeature(XposedInterface.Chain chain, Object original) {
+        if (!(original instanceof java.util.Map)) return original;
+        Object arg = chain.getArgs().isEmpty() ? null : chain.getArg(0);
+        if (!(arg instanceof Enum)) return original;
+
+        String tag = ((Enum<?>) arg).name();
+        boolean wantLenses = mCamLenses && BACK_UHD_60.equals(tag);
+        boolean wantSlowMo = mCam4k120SlowMo && (BACK_UHD_120.equals(tag) || FRONT_UHD_120.equals(tag));
+        if (!wantLenses && !wantSlowMo) return original;
+
+        java.util.Map src = (java.util.Map) original;
+        Object modeObj = src.get(FEATURE_SUPPORTED_MODE);
+        String mode = modeObj == null ? "" : modeObj.toString();
+        boolean seamlessMissing = wantLenses && !"true".equals(String.valueOf(src.get(FEATURE_SEAMLESS_ZOOM)));
+        boolean slowMoMissing = wantSlowMo && !mode.contains(MODE_SLOW_MOTION);
+        if (!seamlessMissing && !slowMoMissing) return original;
+
+        java.util.HashMap<Object, Object> patched = new java.util.HashMap<>();
+        for (Object entryObj : src.entrySet()) {
+            java.util.Map.Entry entry = (java.util.Map.Entry) entryObj;
+            patched.put(entry.getKey(), entry.getValue());
+        }
+        if (seamlessMissing) {
+            patched.put(FEATURE_SEAMLESS_ZOOM, "true");
+        }
+        if (slowMoMissing) {
+            patched.put(FEATURE_SUPPORTED_MODE, mode.isEmpty() ? MODE_SLOW_MOTION : mode + "," + MODE_SLOW_MOTION);
+            patched.put(FEATURE_VALUE, "true");
+        }
+        int n = mCamResolutionPatchCount++;
+        if (n < 8) {
+            Log.i(TAG, "Patched " + tag + " seamless-zoom=" + patched.get(FEATURE_SEAMLESS_ZOOM)
+                    + " mode=" + patched.get(FEATURE_SUPPORTED_MODE));
+        }
+        return patched;
     }
 
 

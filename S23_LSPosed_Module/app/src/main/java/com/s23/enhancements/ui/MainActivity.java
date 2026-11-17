@@ -39,6 +39,7 @@ public class MainActivity extends Activity {
     // Camera
     public static final String KEY_CAMERA_LOG_VIDEO = "pref_camera_log_video";
     public static final String KEY_CAMERA_4K60_LENSES = "pref_camera_4k60_lenses";
+    public static final String KEY_CAMERA_4K120_SLOWMO = "pref_camera_4k120_slowmo";
     public static final String KEY_CAMERA_JPEG_100 = "pref_camera_jpeg_100";
     public static final String KEY_CAMERA_SHUTTER_MUTE = "pref_camera_shutter_mute";
 
@@ -71,7 +72,7 @@ public class MainActivity extends Activity {
     private static final String GLOBAL_PREFIX = "s23enh_";
 
     private static final String[] ALL_KEYS = {
-            KEY_CAMERA_LOG_VIDEO, KEY_CAMERA_4K60_LENSES, KEY_CAMERA_JPEG_100,
+            KEY_CAMERA_LOG_VIDEO, KEY_CAMERA_4K60_LENSES, KEY_CAMERA_4K120_SLOWMO, KEY_CAMERA_JPEG_100,
             KEY_CAMERA_SHUTTER_MUTE,
             KEY_DISPLAY_OUTDOOR, KEY_DISPLAY_SCREEN_MODE, KEY_DISPLAY_SCREEN_TIMEOUT,
             KEY_DISPLAY_ACTION_TIMEOUT, KEY_DISPLAY_EAD, KEY_DISPLAY_FONTS,
@@ -393,6 +394,8 @@ public class MainActivity extends Activity {
                 R.string.desc_camera_log_video, true));
         group.addView(toggleRow(KEY_CAMERA_4K60_LENSES, R.string.title_camera_4k60_lenses,
                 R.string.desc_camera_4k60_lenses, true));
+        group.addView(toggleRow(KEY_CAMERA_4K120_SLOWMO, R.string.title_camera_4k120_slowmo,
+                R.string.desc_camera_4k120_slowmo, true));
         group.addView(toggleRow(KEY_CAMERA_JPEG_100, R.string.title_camera_jpeg_100,
                 R.string.desc_camera_jpeg_100, true));
         group.addView(toggleRow(KEY_CAMERA_SHUTTER_MUTE, R.string.title_camera_shutter_mute,

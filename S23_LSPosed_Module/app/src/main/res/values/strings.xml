@@ -14,6 +14,8 @@
     <string name="desc_camera_log_video">Aktivuje nativní Log profil v Pro Video pro maximální dynamický rozsah a color grading.</string>
     <string name="title_camera_4k60_lenses">4K60 přepínání objektivů</string>
     <string name="desc_camera_4k60_lenses">Umožňuje přepínání 0,6x, 1x, 3x a 10x objektivu při 4K 60 fps bez digitálního ořezu.</string>
+    <string name="title_camera_4k120_slowmo">4K120 slow-motion</string>
+    <string name="desc_camera_4k120_slowmo">Přidá 3840×2160 při 120 fps do režimu Zpomalený pohyb (skryté položky resolution mapy).</string>
     <string name="title_camera_jpeg_100">100% kvalita</string>
     <string name="title_camera_shutter_mute">Vypnutí zvuku závěrky</string>
     <string name="desc_camera_shutter_mute">Umožní ztlumit zvuk závěrky fotoaparátu i v regionech, kde ho Samsung vynucuje (CSC zámek). Volba Zvuk závěrky se objeví v nastavení fotoaparátu.</string>
