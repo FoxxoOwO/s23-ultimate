@@ -1,6 +1,6 @@
 # S23 Ultra Enhancements (LSPosed)
 
-LSPosed module + companion app styled with Samsung One UI design for the **Galaxy S23 Ultra** (SM-S918B, One UI 9 / Android 16–17).
+LSPosed module + companion app built with native **SESL9 (Samsung One UI 9)** components for the **Galaxy S23 Ultra** (SM-S918B, One UI 9 / Android 16–17).
 
 The module unlocks features that Samsung has software-locked on the S23 and adds SystemUI / Status Bar customizations. Each feature can be individually toggled or configured inside the companion app without requiring a device reboot.
 
@@ -13,7 +13,7 @@ The module unlocks features that Samsung has software-locked on the S23 and adds
 | **Camera** | Log Video (`pref_camera_log_video`), 4K60 lens switching (`pref_camera_4k60_lenses`), 4K120 Slow Motion (`pref_camera_4k120_slowmo`), 100% JPEG quality (`pref_camera_jpeg_100`), Shutter sound mute toggle (`pref_camera_shutter_mute`) |
 | **Display** | Outdoor Mode toggle (`pref_display_outdoor_mode` + Quick Settings tile), Display color profiles (`pref_display_screen_mode`: AMOLED Cinema / Photo / Basic), Extended screen timeouts (`pref_display_screen_timeout`: 30 min / 1 hr / Never), Action timeout (`pref_display_action_timeout`), Adaptive Color Tone (`pref_display_adaptive_color_tone`), Unlock custom fonts (`pref_display_unlock_fonts`) |
 | **Status Bar** | Screen edge spacing (`pref_sb_edge_space_mode`, `pref_sb_edge_space_dp`), Item spacing (`pref_sb_item_spacing`), Max notification icons `1–10` (`pref_sb_max_notif_icons`), Hidden status icons via `icon_blacklist` (`pref_sb_hidden_icons`), One connection icon (`pref_sb_one_connection_icon`), Status bar Back button (`pref_sb_back_button`), Screen burn-in pixel shift (`pref_sb_burn_in_protect`) |
-| **Status Bar Taps** | Double-tap empty space to sleep (`pref_sb_double_tap_sleep`), Tap vibration + strength (`pref_sb_tap_vibrate`, `pref_sb_tap_vibrate_strength`), Customizable tap & long-press actions with live Test button (`pref_sb_tap_*` / `pref_sb_long_*` for Battery, Clock, Front camera hole, Wi-Fi, Mobile signal) |
+| **Status Bar Taps** | Double-tap empty space to sleep (`pref_sb_double_tap_sleep`), Tap vibration + strength (`pref_sb_tap_vibrate`, `pref_sb_tap_vibrate_strength`), Customizable tap & long-press actions (including Camera and Open any app) with live Test button (`pref_sb_tap_*` / `pref_sb_long_*` for Battery, Clock, Front camera hole, Wi-Fi, Mobile signal) |
 | **Notifications** | Open notifications fully (`pref_notif_auto_expand`), Expand groups with one tap (`pref_notif_expand_groups_one_tap`), Keep silent notifications small (`pref_notif_keep_silent_small`) |
 | **System & Updates** | Native call recording (`pref_telephony_call_recording`), Show Wi-Fi passwords (`pref_system_show_wifi_passwords`), Bypass `FLAG_SECURE` (`pref_system_disable_flag_secure`), Disable telemetry (`pref_system_disable_telemetry`), Detailed battery info (`pref_system_battery_info`), Live Battery card, Restart SystemUI button, and GitHub Releases auto-updater (`pref_app_auto_update`) |
 
@@ -39,9 +39,9 @@ App (One UI)  ──►  SharedPreferences  ──►  mirror to Settings.Global
 ## Building
 
 Prerequisites:
-- Android SDK (Build-Tools 36, platform `android-36`), with `ANDROID_HOME` configured
-- JDK 17+
-- 7-Zip (`C:\Program Files\7-Zip\7z.exe`)
+- Android SDK with platform `android-37` (`compileSdk = 37`), with `ANDROID_HOME` configured
+- JDK 24+ (SESL9 AARs target classfile version 68) and Gradle 9.x (tested with JDK 25 + Gradle 9.9.1)
+- GitHub authentication with `read:packages` scope (`gh auth refresh -s read:packages`, or `GPR_USER` / `GPR_TOKEN` env vars) for `tribalfs` SESL9 GitHub Packages
 - ADB (optional, for automated device deployment)
 - `libxposed-api-102.jar` — download from [LibXposed API releases](https://github.com/libxposed/api/releases) and place it in the repository root
 
@@ -53,9 +53,9 @@ powershell -ExecutionPolicy Bypass -File .\build_and_install.ps1
 powershell -ExecutionPolicy Bypass -File .\build_and_install.ps1 -NoInstall
 ```
 
-Build pipeline: `aapt2 compile/link` → `javac --release 17` → `d8 --min-api 31` → 7-Zip → `zipalign` → `apksigner` → `adb install`.
+Build pipeline: Gradle `:app:assembleRelease` (`S23_LSPosed_Module`, excluding stock `androidx.*`/`material` in favor of `sesl.*`) → signed with `debug.keystore` → `adb install -r`.
 
-The APK is signed with `debug.keystore` (password: `android`, alias: `debug`). For custom builds, generate your own keystore and update the paths in `build_and_install.ps1`.
+The APK is signed with `debug.keystore` (password: `android`, alias: `debug`). For custom builds, generate your own keystore and update `signingConfigs` in `S23_LSPosed_Module/app/build.gradle.kts`.
 
 ## Installation & Updates
 

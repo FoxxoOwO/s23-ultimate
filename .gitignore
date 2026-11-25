@@ -4,6 +4,10 @@ S23_LSPosed_Module/classes/
 S23_LSPosed_Module/dex/
 S23_LSPosed_Module/staging/
 S23_LSPosed_Module/*.apk
+S23_LSPosed_Module/.gradle/
+S23_LSPosed_Module/build/
+S23_LSPosed_Module/app/build/
+S23_LSPosed_Module/local.properties
 
 # Signed output (release assets, not tracked)
 *.apk

@@ -220,6 +220,11 @@
     <string name="sb_act_alarms">Alarms</string>
     <string name="sb_act_timer">Timer</string>
     <string name="sb_act_finder">Samsung Finder (search)</string>
+    <string name="sb_act_camera">Camera</string>
+    <string name="sb_act_app">Open app…</string>
+    <string name="sb_act_app_val">Open app: %1$s</string>
+    <string name="sb_act_app_pick_title">Choose an app</string>
+    <string name="sb_act_app_none_found">No launchable apps found</string>
     <string name="sb_act_flashlight">Flashlight</string>
     <string name="sb_act_screenshot">Screenshot</string>
     <string name="sb_act_expand_notifications">Open notifications</string>

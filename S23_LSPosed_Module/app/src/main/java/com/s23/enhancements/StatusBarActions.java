@@ -4,6 +4,7 @@ import android.app.ActivityManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
 import android.hardware.input.InputManager;
@@ -16,6 +17,7 @@ import android.os.SystemClock;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.os.VibratorManager;
+import android.provider.MediaStore;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.HapticFeedbackConstants;
@@ -41,6 +43,9 @@ public final class StatusBarActions {
     public static final String ACTION_ALARMS = "alarms";
     public static final String ACTION_TIMER = "timer";
     public static final String ACTION_FINDER = "finder";
+    public static final String ACTION_CAMERA = "camera";
+    public static final String ACTION_APP = "app";
+    public static final String ACTION_APP_PREFIX = "app:";
     public static final String ACTION_FLASHLIGHT = "flashlight";
     public static final String ACTION_SCREENSHOT = "screenshot";
     public static final String ACTION_EXPAND_NOTIFICATIONS = "expand_notifications";
@@ -62,6 +67,8 @@ public final class StatusBarActions {
             ACTION_ALARMS,
             ACTION_TIMER,
             ACTION_FINDER,
+            ACTION_CAMERA,
+            ACTION_APP,
             ACTION_FLASHLIGHT,
             ACTION_SCREENSHOT,
             ACTION_EXPAND_NOTIFICATIONS,
@@ -87,6 +94,7 @@ public final class StatusBarActions {
 
     public static int labelResFor(String actionId) {
         if (actionId == null) return R.string.sb_act_none;
+        if (actionId.startsWith(ACTION_APP_PREFIX)) return R.string.sb_act_app;
         switch (actionId) {
             case ACTION_SLEEP:
                 return R.string.sb_act_sleep;
@@ -100,6 +108,10 @@ public final class StatusBarActions {
                 return R.string.sb_act_timer;
             case ACTION_FINDER:
                 return R.string.sb_act_finder;
+            case ACTION_CAMERA:
+                return R.string.sb_act_camera;
+            case ACTION_APP:
+                return R.string.sb_act_app;
             case ACTION_FLASHLIGHT:
                 return R.string.sb_act_flashlight;
             case ACTION_SCREENSHOT:
@@ -127,6 +139,22 @@ public final class StatusBarActions {
             default:
                 return R.string.sb_act_none;
         }
+    }
+
+    public static String formatLabel(Context ctx, String actionId) {
+        if (ctx == null) return "";
+        if (actionId != null && actionId.startsWith(ACTION_APP_PREFIX)) {
+            String pkg = actionId.substring(ACTION_APP_PREFIX.length()).trim();
+            if (pkg.isEmpty()) return ctx.getString(R.string.sb_act_app);
+            CharSequence appLabel = pkg;
+            try {
+                PackageManager pm = ctx.getPackageManager();
+                appLabel = pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0));
+            } catch (Throwable ignored) {
+            }
+            return ctx.getString(R.string.sb_act_app_val, appLabel);
+        }
+        return ctx.getString(labelResFor(actionId));
     }
 
     public static void performHaptic(Context ctx, boolean enabled, int strength) {
@@ -165,6 +193,10 @@ public final class StatusBarActions {
     public static void execute(Context ctx, String actionId) {
         if (ctx == null || actionId == null || ACTION_NONE.equals(actionId)) return;
         try {
+            if (actionId.startsWith(ACTION_APP_PREFIX)) {
+                launchApp(ctx, actionId.substring(ACTION_APP_PREFIX.length()).trim());
+                return;
+            }
             switch (actionId) {
                 case ACTION_SLEEP:
                     goToSleep(ctx);
@@ -183,6 +215,9 @@ public final class StatusBarActions {
                     break;
                 case ACTION_FINDER:
                     launchFinder(ctx);
+                    break;
+                case ACTION_CAMERA:
+                    launchCamera(ctx);
                     break;
                 case ACTION_FLASHLIGHT:
                     toggleFlashlight(ctx);
@@ -318,6 +353,28 @@ public final class StatusBarActions {
             } catch (Throwable ignored) {
             }
             launchActivity(ctx, new Intent(Intent.ACTION_SEARCH));
+        }
+    }
+
+    private static void launchCamera(Context ctx) {
+        Intent intent = null;
+        try {
+            intent = ctx.getPackageManager().getLaunchIntentForPackage("com.sec.android.app.camera");
+        } catch (Throwable ignored) {
+        }
+        if (intent == null) {
+            intent = new Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA);
+        }
+        launchActivity(ctx, intent);
+    }
+
+    private static void launchApp(Context ctx, String pkg) {
+        if (pkg == null || pkg.isEmpty()) return;
+        Intent launch = ctx.getPackageManager().getLaunchIntentForPackage(pkg);
+        if (launch != null) {
+            launchActivity(ctx, launch);
+        } else {
+            Log.w(TAG, "No launcher intent for package: " + pkg);
         }
     }
 

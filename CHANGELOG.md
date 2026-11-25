@@ -2,6 +2,20 @@
 
 All notable changes to **S23 Ultra Enhancements** are documented in this file.
 
+## [2.3] - 2026-11-25
+
+### Added
+- **Status Bar tap/long-press actions**:
+  - **Camera** (`camera`): opens Samsung Camera directly from any status bar target.
+  - **Open app…** (`app:<packageName>`): pick any installed launcher app (with `<queries>` launcher visibility for Android 11+ and live **Test** support).
+- **Native SESL9 (One UI 9) UI** using [sesl-material-components-android](https://github.com/tribalfs/sesl-material-components-android) (`1.14.0+1.0.47-sesl9+rev14`) and [sesl-androidx](https://github.com/tribalfs/sesl-androidx):
+  - `CoordinatorLayout` + `AppBarLayout` + `CollapsingToolbarLayout` + `Toolbar` header with DayNight theme support and `meta_998_sesl_app.xml` SESL palette metadata.
+  - `PreferenceFragmentCompat` with native grouped `PreferenceCategory`, `SwitchPreferenceCompat`, and `Preference` rows.
+  - SESL9 `AlertDialog` and `SeslSeekBar` inside `OneUiDialog`.
+
+### Changed
+- Migrated `S23_LSPosed_Module` from the manual `aapt2`/`javac`/`d8` script to Gradle (`9.9.1`) + AGP (`9.5.1`) with `compileSdk = 37` and JDK 24+/25 support, while preserving `debug.keystore` signing and `META-INF/xposed/*` metadata.
+
 ## [2.2] - 2026-11-25
 
 ### Added
