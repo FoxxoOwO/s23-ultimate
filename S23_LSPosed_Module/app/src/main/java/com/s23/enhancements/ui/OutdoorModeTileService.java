@@ -103,7 +103,7 @@ public class OutdoorModeTileService extends TileService {
             tile.setState(active ? Tile.STATE_ACTIVE : Tile.STATE_INACTIVE);
             tile.setLabel(getString(R.string.tile_outdoor_mode));
             tile.setIcon(Icon.createWithResource(this, R.drawable.ic_sun));
-            tile.setSubtitle(active ? "1200 nitů" : "Vypnuto");
+            tile.setSubtitle(getString(active ? R.string.tile_outdoor_on : R.string.tile_outdoor_off));
             tile.updateTile();
         } catch (Throwable t) {
             Log.w(TAG, "Error updating tile state", t);

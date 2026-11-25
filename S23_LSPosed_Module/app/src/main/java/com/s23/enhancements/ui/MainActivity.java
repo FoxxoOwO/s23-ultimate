@@ -15,8 +15,10 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.s23.enhancements.AppUpdater;
 import com.s23.enhancements.PrefProvider;
 import com.s23.enhancements.R;
+import com.s23.enhancements.StatusBarActions;
 import com.s23.enhancements.ui.oneui.OneUiDeviceCard;
 import com.s23.enhancements.ui.oneui.OneUiDialog;
 import com.s23.enhancements.ui.oneui.OneUiInfoRow;
@@ -28,7 +30,11 @@ import com.s23.enhancements.ui.oneui.OneUiTheme;
 
 import java.io.File;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 /**
  * Single screen of the companion app. Every supported feature is one row and can be
@@ -56,9 +62,40 @@ public class MainActivity extends Activity {
     public static final String KEY_SYSTEM_WIFI_PASSWORDS = "pref_system_show_wifi_passwords";
     public static final String KEY_SYSTEM_FLAG_SECURE = "pref_system_disable_flag_secure";
     public static final String KEY_SYSTEM_TELEMETRY = "pref_system_disable_telemetry";
+    public static final String KEY_AUTO_UPDATE = "pref_app_auto_update";
 
     // Battery
     public static final String KEY_BATTERY_INFO = "pref_system_battery_info";
+
+    // Status bar
+    public static final String KEY_SB_EDGE_MODE = "pref_sb_edge_space_mode";
+    public static final String KEY_SB_EDGE_DP = "pref_sb_edge_space_dp";
+    public static final String KEY_SB_ITEM_SPACING = "pref_sb_item_spacing";
+    public static final String KEY_SB_MAX_NOTIF_ICONS = "pref_sb_max_notif_icons";
+    public static final String KEY_SB_HIDDEN_ICONS = "pref_sb_hidden_icons";
+    public static final String KEY_SB_ONE_CONN_ICON = "pref_sb_one_connection_icon";
+    public static final String KEY_SB_BACK_BUTTON = "pref_sb_back_button";
+    public static final String KEY_SB_BURN_IN = "pref_sb_burn_in_protect";
+
+    // Status bar taps & feedback
+    public static final String KEY_SB_DOUBLE_TAP_SLEEP = "pref_sb_double_tap_sleep";
+    public static final String KEY_SB_TAP_VIBRATE = "pref_sb_tap_vibrate";
+    public static final String KEY_SB_TAP_VIBRATE_STRENGTH = "pref_sb_tap_vibrate_strength";
+    public static final String KEY_SB_TAP_BATTERY = "pref_sb_tap_battery";
+    public static final String KEY_SB_LONG_BATTERY = "pref_sb_long_battery";
+    public static final String KEY_SB_TAP_CLOCK = "pref_sb_tap_clock";
+    public static final String KEY_SB_LONG_CLOCK = "pref_sb_long_clock";
+    public static final String KEY_SB_TAP_CAMERA_HOLE = "pref_sb_tap_camera_hole";
+    public static final String KEY_SB_LONG_CAMERA_HOLE = "pref_sb_long_camera_hole";
+    public static final String KEY_SB_TAP_WIFI = "pref_sb_tap_wifi";
+    public static final String KEY_SB_LONG_WIFI = "pref_sb_long_wifi";
+    public static final String KEY_SB_TAP_MOBILE = "pref_sb_tap_mobile";
+    public static final String KEY_SB_LONG_MOBILE = "pref_sb_long_mobile";
+
+    // Notifications
+    public static final String KEY_NOTIF_AUTO_EXPAND = "pref_notif_auto_expand";
+    public static final String KEY_NOTIF_GROUPS_ONE_TAP = "pref_notif_expand_groups_one_tap";
+    public static final String KEY_NOTIF_KEEP_SILENT_SMALL = "pref_notif_keep_silent_small";
 
     private static final int[] SCREEN_MODE_VALUES = {4, 3, 0, 1, 2};
     private static final long[] SCREEN_TIMEOUT_VALUES = {
@@ -66,6 +103,38 @@ public class MainActivity extends Activity {
     };
     private static final int[] ACTION_TIMEOUT_VALUES = {
             0, 5000, 10000, 20000, 30000, 60000, 120000, 300000, -1
+    };
+
+    private static final String[][] STATUS_ICON_SLOT_GROUPS = {
+            {"alarm_clock"},
+            {"nfc", "nfc_on"},
+            {"bluetooth", "bluetooth_connected"},
+            {"volume", "zen"},
+            {"dnd"},
+            {"location"},
+            {"ims_volte", "ims_volte2", "volte", "vowifi", "ims_vowifi"},
+            {"headset"},
+            {"rotate"},
+            {"airplane"},
+            {"hotspot"},
+            {"data_saver"},
+            {"vpn"},
+            {"cast"},
+            {"power_saver"},
+            {"secure_folder"},
+            {"wifi"},
+            {"mobile"},
+            {"clock"},
+            {"battery"}
+    };
+    private static final int[] STATUS_ICON_LABELS = {
+            R.string.sb_icon_alarm, R.string.sb_icon_nfc, R.string.sb_icon_bluetooth,
+            R.string.sb_icon_volume, R.string.sb_icon_zen, R.string.sb_icon_location,
+            R.string.sb_icon_ims_volte, R.string.sb_icon_headset, R.string.sb_icon_rotate,
+            R.string.sb_icon_airplane, R.string.sb_icon_hotspot, R.string.sb_icon_data_saver,
+            R.string.sb_icon_vpn, R.string.sb_icon_cast, R.string.sb_icon_power_saver,
+            R.string.sb_icon_secure_folder, R.string.sb_icon_wifi, R.string.sb_icon_mobile,
+            R.string.sb_icon_clock, R.string.sb_icon_battery
     };
 
     /** Mirror prefix — must match HookEntry.GLOBAL_PREFIX. */
@@ -78,7 +147,24 @@ public class MainActivity extends Activity {
             KEY_DISPLAY_ACTION_TIMEOUT, KEY_DISPLAY_EAD, KEY_DISPLAY_FONTS,
             KEY_SYSTEM_CALL_RECORDING, KEY_SYSTEM_WIFI_PASSWORDS,
             KEY_SYSTEM_FLAG_SECURE, KEY_SYSTEM_TELEMETRY,
-            KEY_BATTERY_INFO
+            KEY_BATTERY_INFO,
+            KEY_SB_ONE_CONN_ICON, KEY_SB_BACK_BUTTON, KEY_SB_BURN_IN,
+            KEY_SB_DOUBLE_TAP_SLEEP, KEY_SB_TAP_VIBRATE,
+            KEY_NOTIF_AUTO_EXPAND, KEY_NOTIF_GROUPS_ONE_TAP, KEY_NOTIF_KEEP_SILENT_SMALL
+    };
+
+    private static final String[] ALL_INT_KEYS = {
+            KEY_SB_EDGE_MODE, KEY_SB_EDGE_DP, KEY_SB_ITEM_SPACING,
+            KEY_SB_MAX_NOTIF_ICONS, KEY_SB_TAP_VIBRATE_STRENGTH
+    };
+
+    private static final String[] ALL_STRING_KEYS = {
+            KEY_SB_HIDDEN_ICONS,
+            KEY_SB_TAP_BATTERY, KEY_SB_LONG_BATTERY,
+            KEY_SB_TAP_CLOCK, KEY_SB_LONG_CLOCK,
+            KEY_SB_TAP_CAMERA_HOLE, KEY_SB_LONG_CAMERA_HOLE,
+            KEY_SB_TAP_WIFI, KEY_SB_LONG_WIFI,
+            KEY_SB_TAP_MOBILE, KEY_SB_LONG_MOBILE
     };
 
     private SharedPreferences mPrefs;
@@ -111,6 +197,11 @@ public class MainActivity extends Activity {
     private OneUiSelectRow mScreenModeRow;
     private OneUiSelectRow mScreenTimeoutRow;
     private OneUiSelectRow mActionTimeoutRow;
+    private OneUiSelectRow mSbEdgeSpaceRow;
+    private OneUiSelectRow mSbItemSpacingRow;
+    private OneUiSelectRow mSbMaxNotifRow;
+    private OneUiSelectRow mSbHiddenIconsRow;
+    private OneUiSelectRow mSbVibrateStrengthRow;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -125,11 +216,15 @@ public class MainActivity extends Activity {
         buildBatterySection();
         buildCameraSection();
         buildDisplaySection();
+        buildStatusBarSection();
+        buildStatusBarTapsSection();
+        buildNotificationsSection();
         buildSystemSection();
         addFooter();
 
         updatePermissions();
         syncAllPrefsToGlobal();
+        AppUpdater.checkOnStartup(this, mPrefs);
     }
 
     @Override
@@ -441,6 +536,343 @@ public class MainActivity extends Activity {
         root.addView(values);
     }
 
+    private void buildStatusBarSection() {
+        LinearLayout root = findViewById(R.id.content_root);
+        root.addView(new OneUiSectionHeader(this, getString(R.string.sec_statusbar)));
+
+        OneUiPreferenceGroup layoutGroup = new OneUiPreferenceGroup(this);
+
+        mSbEdgeSpaceRow = new OneUiSelectRow(this)
+                .title(getString(R.string.sb_row_edge_space));
+        mSbEdgeSpaceRow.setOnClickListener(v -> pickEdgeSpace());
+        layoutGroup.addView(mSbEdgeSpaceRow);
+
+        mSbItemSpacingRow = new OneUiSelectRow(this)
+                .title(getString(R.string.sb_row_item_spacing));
+        mSbItemSpacingRow.setOnClickListener(v -> pickItemSpacing());
+        layoutGroup.addView(mSbItemSpacingRow);
+
+        mSbMaxNotifRow = new OneUiSelectRow(this)
+                .title(getString(R.string.sb_row_max_notif_icons));
+        mSbMaxNotifRow.setOnClickListener(v -> pickMaxNotifIcons());
+        layoutGroup.addView(mSbMaxNotifRow);
+
+        mSbHiddenIconsRow = new OneUiSelectRow(this)
+                .title(getString(R.string.sb_row_hidden_icons));
+        mSbHiddenIconsRow.setOnClickListener(v -> pickHiddenIcons());
+        layoutGroup.addView(mSbHiddenIconsRow);
+
+        root.addView(layoutGroup);
+
+        OneUiPreferenceGroup togglesGroup = new OneUiPreferenceGroup(this);
+        togglesGroup.addView(toggleRow(KEY_SB_ONE_CONN_ICON, R.string.title_sb_one_conn,
+                R.string.desc_sb_one_conn, false));
+        togglesGroup.addView(toggleRow(KEY_SB_BACK_BUTTON, R.string.title_sb_back_btn,
+                R.string.desc_sb_back_btn, false));
+        togglesGroup.addView(toggleRow(KEY_SB_BURN_IN, R.string.title_sb_burn_in,
+                R.string.desc_sb_burn_in, true));
+        root.addView(togglesGroup);
+
+        syncStatusBarSummaries();
+    }
+
+    private void buildStatusBarTapsSection() {
+        LinearLayout root = findViewById(R.id.content_root);
+        root.addView(new OneUiSectionHeader(this, getString(R.string.sec_sb_taps)));
+
+        OneUiPreferenceGroup feedbackGroup = new OneUiPreferenceGroup(this);
+        feedbackGroup.addView(toggleRow(KEY_SB_DOUBLE_TAP_SLEEP, R.string.title_sb_double_tap_sleep,
+                R.string.desc_sb_double_tap_sleep, false));
+        feedbackGroup.addView(toggleRow(KEY_SB_TAP_VIBRATE, R.string.title_sb_vibrate,
+                R.string.desc_sb_vibrate, true));
+
+        mSbVibrateStrengthRow = new OneUiSelectRow(this)
+                .title(getString(R.string.sb_row_vibrate_strength));
+        mSbVibrateStrengthRow.setOnClickListener(v -> pickVibrateStrength());
+        feedbackGroup.addView(mSbVibrateStrengthRow);
+        root.addView(feedbackGroup);
+
+        OneUiPreferenceGroup actionsGroup = new OneUiPreferenceGroup(this);
+        actionsGroup.addView(actionPickerRow(KEY_SB_TAP_BATTERY, R.string.sb_tap_batt));
+        actionsGroup.addView(actionPickerRow(KEY_SB_LONG_BATTERY, R.string.sb_long_batt));
+        actionsGroup.addView(actionPickerRow(KEY_SB_TAP_CLOCK, R.string.sb_tap_clock));
+        actionsGroup.addView(actionPickerRow(KEY_SB_LONG_CLOCK, R.string.sb_long_clock));
+        actionsGroup.addView(actionPickerRow(KEY_SB_TAP_CAMERA_HOLE, R.string.sb_tap_hole));
+        actionsGroup.addView(actionPickerRow(KEY_SB_LONG_CAMERA_HOLE, R.string.sb_long_hole));
+        actionsGroup.addView(actionPickerRow(KEY_SB_TAP_WIFI, R.string.sb_tap_wifi));
+        actionsGroup.addView(actionPickerRow(KEY_SB_LONG_WIFI, R.string.sb_long_wifi));
+        actionsGroup.addView(actionPickerRow(KEY_SB_TAP_MOBILE, R.string.sb_tap_mobile));
+        actionsGroup.addView(actionPickerRow(KEY_SB_LONG_MOBILE, R.string.sb_long_mobile));
+        root.addView(actionsGroup);
+
+        syncVibrateStrengthSummary();
+    }
+
+    private void buildNotificationsSection() {
+        LinearLayout root = findViewById(R.id.content_root);
+        root.addView(new OneUiSectionHeader(this, getString(R.string.sec_notifications)));
+
+        OneUiPreferenceGroup group = new OneUiPreferenceGroup(this);
+        group.addView(toggleRow(KEY_NOTIF_AUTO_EXPAND, R.string.title_notif_auto_expand,
+                R.string.desc_notif_auto_expand, false));
+        group.addView(toggleRow(KEY_NOTIF_GROUPS_ONE_TAP, R.string.title_notif_groups_one_tap,
+                R.string.desc_notif_groups_one_tap, false));
+        group.addView(toggleRow(KEY_NOTIF_KEEP_SILENT_SMALL, R.string.title_notif_keep_silent_small,
+                R.string.desc_notif_keep_silent_small, true));
+        root.addView(group);
+    }
+
+    private OneUiSelectRow actionPickerRow(String prefKey, int titleRes) {
+        String title = getString(titleRes);
+        OneUiSelectRow row = new OneUiSelectRow(this)
+                .title(title)
+                .value(getString(StatusBarActions.labelResFor(
+                        mPrefs.getString(prefKey, StatusBarActions.ACTION_NONE))));
+        row.setOnClickListener(v -> {
+            String cur = mPrefs.getString(prefKey, StatusBarActions.ACTION_NONE);
+            int sel = 0;
+            CharSequence[] labels = new CharSequence[StatusBarActions.ACTION_IDS.length];
+            for (int i = 0; i < StatusBarActions.ACTION_IDS.length; i++) {
+                String id = StatusBarActions.ACTION_IDS[i];
+                labels[i] = getString(StatusBarActions.labelResFor(id));
+                if (id.equals(cur)) sel = i;
+            }
+            OneUiDialog.showSingleChoice(
+                    this,
+                    title,
+                    labels,
+                    sel,
+                    idx -> {
+                        String picked = StatusBarActions.ACTION_IDS[idx];
+                        mPrefs.edit().putString(prefKey, picked).apply();
+                        mirrorStringToGlobal(prefKey, picked);
+                        row.setValue(labels[idx]);
+                        toast(getString(R.string.toast_saved));
+                    },
+                    getString(R.string.sb_action_test),
+                    idx -> {
+                        String testId = StatusBarActions.ACTION_IDS[idx];
+                        StatusBarActions.performHaptic(
+                                this,
+                                mPrefs.getBoolean(KEY_SB_TAP_VIBRATE, true),
+                                mPrefs.getInt(KEY_SB_TAP_VIBRATE_STRENGTH, 1));
+                        StatusBarActions.execute(this, testId);
+                    });
+        });
+        return row;
+    }
+
+    private void pickEdgeSpace() {
+        final CharSequence[] options = {
+                getString(R.string.sb_edge_samsung),
+                getString(R.string.sb_edge_tight),
+                getString(R.string.sb_edge_custom)
+        };
+        int curMode = Math.max(0, Math.min(2, mPrefs.getInt(KEY_SB_EDGE_MODE, 0)));
+        OneUiDialog.showSingleChoice(this, getString(R.string.sb_row_edge_space), options, curMode, idx -> {
+            if (idx == 2) {
+                int curDp = mPrefs.getInt(KEY_SB_EDGE_DP, 4);
+                OneUiDialog.showInput(this, getString(R.string.sb_edge_custom_title),
+                        getString(R.string.sb_edge_custom_hint), String.valueOf(curDp),
+                        getString(R.string.action_set), value -> {
+                            try {
+                                int dp = Math.max(0, Math.min(32, Integer.parseInt(value)));
+                                mPrefs.edit().putInt(KEY_SB_EDGE_MODE, 2).putInt(KEY_SB_EDGE_DP, dp).apply();
+                                mirrorIntToGlobal(KEY_SB_EDGE_MODE, 2);
+                                mirrorIntToGlobal(KEY_SB_EDGE_DP, dp);
+                                syncStatusBarSummaries();
+                                toast(getString(R.string.toast_saved));
+                            } catch (NumberFormatException e) {
+                                toast(getString(R.string.toast_invalid_value));
+                            }
+                        });
+            } else {
+                mPrefs.edit().putInt(KEY_SB_EDGE_MODE, idx).apply();
+                mirrorIntToGlobal(KEY_SB_EDGE_MODE, idx);
+                syncStatusBarSummaries();
+                toast(getString(R.string.toast_saved));
+            }
+        });
+    }
+
+    private void pickItemSpacing() {
+        int cur = mPrefs.getInt(KEY_SB_ITEM_SPACING, -1);
+        int start = cur < 0 ? 4 : Math.max(0, Math.min(12, cur));
+        OneUiDialog.showSlider(
+                this,
+                getString(R.string.sb_row_item_spacing),
+                getString(R.string.sb_item_spacing_sub),
+                0, 12, start,
+                v -> getString(R.string.sb_item_spacing_val, v),
+                getString(R.string.sb_reset), -1,
+                getString(R.string.sb_save),
+                value -> {
+                    mPrefs.edit().putInt(KEY_SB_ITEM_SPACING, value).apply();
+                    mirrorIntToGlobal(KEY_SB_ITEM_SPACING, value);
+                    syncStatusBarSummaries();
+                    toast(getString(R.string.toast_saved));
+                });
+    }
+
+    private void pickMaxNotifIcons() {
+        int cur = mPrefs.getInt(KEY_SB_MAX_NOTIF_ICONS, 0);
+        int start = cur <= 0 ? 3 : Math.max(1, Math.min(10, cur));
+        OneUiDialog.showSlider(
+                this,
+                getString(R.string.sb_row_max_notif_icons),
+                getString(R.string.sb_max_notif_sub),
+                1, 10, start,
+                v -> getString(R.string.sb_max_notif_val, v),
+                getString(R.string.sb_reset), 0,
+                getString(R.string.sb_save),
+                value -> {
+                    mPrefs.edit().putInt(KEY_SB_MAX_NOTIF_ICONS, value).apply();
+                    mirrorIntToGlobal(KEY_SB_MAX_NOTIF_ICONS, value);
+                    syncStatusBarSummaries();
+                    toast(getString(R.string.toast_saved));
+                });
+    }
+
+    private void pickHiddenIcons() {
+        String raw = Settings.Secure.getString(getContentResolver(), "icon_blacklist");
+        if (raw == null || raw.isEmpty()) {
+            raw = mPrefs.getString(KEY_SB_HIDDEN_ICONS, "");
+        }
+        Set<String> active = new HashSet<>();
+        if (raw != null && !raw.isEmpty() && !"null".equals(raw.trim())) {
+            for (String s : raw.split(",")) {
+                String t = s.trim();
+                if (!t.isEmpty()) active.add(t);
+            }
+        }
+        CharSequence[] labels = new CharSequence[STATUS_ICON_SLOT_GROUPS.length];
+        boolean[] checked = new boolean[STATUS_ICON_SLOT_GROUPS.length];
+        for (int i = 0; i < STATUS_ICON_SLOT_GROUPS.length; i++) {
+            labels[i] = getString(STATUS_ICON_LABELS[i]);
+            boolean any = false;
+            for (String sl : STATUS_ICON_SLOT_GROUPS[i]) {
+                if (active.contains(sl)) {
+                    any = true;
+                    break;
+                }
+            }
+            checked[i] = any;
+        }
+        final String baseBlacklist = raw == null ? "" : raw;
+        OneUiDialog.showMultiChoice(
+                this,
+                getString(R.string.sb_row_hidden_icons),
+                labels,
+                checked,
+                getString(R.string.sb_save),
+                res -> {
+                    Set<String> managedSlots = new HashSet<>();
+                    List<String> wantSlots = new ArrayList<>();
+                    for (int i = 0; i < STATUS_ICON_SLOT_GROUPS.length; i++) {
+                        for (String sl : STATUS_ICON_SLOT_GROUPS[i]) {
+                            managedSlots.add(sl);
+                            if (res[i] && !wantSlots.contains(sl)) {
+                                wantSlots.add(sl);
+                            }
+                        }
+                    }
+                    List<String> merged = new ArrayList<>();
+                    if (!baseBlacklist.trim().equals("null")) {
+                        for (String s : baseBlacklist.split(",")) {
+                            String t = s.trim();
+                            if (!t.isEmpty() && !managedSlots.contains(t) && !merged.contains(t)) {
+                                merged.add(t);
+                            }
+                        }
+                    }
+                    for (String sl : wantSlots) {
+                        if (!merged.contains(sl)) merged.add(sl);
+                    }
+                    StringBuilder sb = new StringBuilder();
+                    for (String sl : merged) {
+                        if (sb.length() > 0) sb.append(',');
+                        sb.append(sl);
+                    }
+                    String joined = sb.toString();
+                    mPrefs.edit().putString(KEY_SB_HIDDEN_ICONS, joined).apply();
+                    mirrorStringToGlobal(KEY_SB_HIDDEN_ICONS, joined);
+                    putSecureSetting("icon_blacklist", joined);
+                    syncStatusBarSummaries();
+                    toast(getString(R.string.toast_saved));
+                });
+    }
+
+    private void pickVibrateStrength() {
+        final CharSequence[] options = {
+                getString(R.string.sb_vib_light),
+                getString(R.string.sb_vib_medium),
+                getString(R.string.sb_vib_strong)
+        };
+        int cur = Math.max(0, Math.min(2, mPrefs.getInt(KEY_SB_TAP_VIBRATE_STRENGTH, 1)));
+        OneUiDialog.showSingleChoice(this, getString(R.string.sb_row_vibrate_strength), options, cur, idx -> {
+            mPrefs.edit().putInt(KEY_SB_TAP_VIBRATE_STRENGTH, idx).apply();
+            mirrorIntToGlobal(KEY_SB_TAP_VIBRATE_STRENGTH, idx);
+            syncVibrateStrengthSummary();
+            StatusBarActions.performHaptic(this, mPrefs.getBoolean(KEY_SB_TAP_VIBRATE, true), idx);
+            toast(getString(R.string.toast_saved));
+        });
+    }
+
+    private void syncStatusBarSummaries() {
+        if (mSbEdgeSpaceRow != null) {
+            int mode = mPrefs.getInt(KEY_SB_EDGE_MODE, 0);
+            if (mode == 1) {
+                mSbEdgeSpaceRow.setValue(getString(R.string.sb_edge_tight));
+            } else if (mode == 2) {
+                mSbEdgeSpaceRow.setValue(getString(R.string.sb_edge_custom_val, mPrefs.getInt(KEY_SB_EDGE_DP, 4)));
+            } else {
+                mSbEdgeSpaceRow.setValue(getString(R.string.sb_edge_samsung));
+            }
+        }
+        if (mSbItemSpacingRow != null) {
+            int sp = mPrefs.getInt(KEY_SB_ITEM_SPACING, -1);
+            mSbItemSpacingRow.setValue(sp < 0
+                    ? getString(R.string.sb_edge_samsung)
+                    : getString(R.string.sb_item_spacing_val, sp));
+        }
+        if (mSbMaxNotifRow != null) {
+            int max = mPrefs.getInt(KEY_SB_MAX_NOTIF_ICONS, 0);
+            mSbMaxNotifRow.setValue(max <= 0
+                    ? getString(R.string.sb_edge_samsung)
+                    : getString(R.string.sb_max_notif_val, max));
+        }
+        if (mSbHiddenIconsRow != null) {
+            String raw = Settings.Secure.getString(getContentResolver(), "icon_blacklist");
+            if (raw == null) raw = mPrefs.getString(KEY_SB_HIDDEN_ICONS, "");
+            Set<String> active = new HashSet<>();
+            if (raw != null && !raw.isEmpty() && !"null".equals(raw.trim())) {
+                for (String s : raw.split(",")) {
+                    String t = s.trim();
+                    if (!t.isEmpty()) active.add(t);
+                }
+            }
+            int count = 0;
+            for (String[] grp : STATUS_ICON_SLOT_GROUPS) {
+                for (String sl : grp) {
+                    if (active.contains(sl)) {
+                        count++;
+                        break;
+                    }
+                }
+            }
+            mSbHiddenIconsRow.setValue(count == 0
+                    ? getString(R.string.sb_hidden_none)
+                    : getString(R.string.sb_hidden_count, count));
+        }
+    }
+
+    private void syncVibrateStrengthSummary() {
+        if (mSbVibrateStrengthRow == null) return;
+        int cur = mPrefs.getInt(KEY_SB_TAP_VIBRATE_STRENGTH, 1);
+        int res = cur == 0 ? R.string.sb_vib_light : (cur == 2 ? R.string.sb_vib_strong : R.string.sb_vib_medium);
+        mSbVibrateStrengthRow.setValue(getString(res));
+    }
+
     private void buildSystemSection() {
         LinearLayout root = findViewById(R.id.content_root);
         root.addView(new OneUiSectionHeader(this, getString(R.string.sec_system)));
@@ -455,6 +887,52 @@ public class MainActivity extends Activity {
         group.addView(toggleRow(KEY_SYSTEM_TELEMETRY, R.string.title_telemetry,
                 R.string.desc_telemetry, true));
         root.addView(group);
+
+        OneUiPreferenceGroup actionsGroup = new OneUiPreferenceGroup(this);
+        actionsGroup.addView(toggleRow(KEY_AUTO_UPDATE, R.string.title_auto_update,
+                R.string.desc_auto_update, true));
+        OneUiSelectRow checkUpdatesRow = new OneUiSelectRow(this)
+                .title(getString(R.string.row_check_updates))
+                .value(getString(R.string.val_version, AppUpdater.getCurrentVersion(this)));
+        checkUpdatesRow.setOnClickListener(v -> AppUpdater.checkNow(this, mPrefs));
+        actionsGroup.addView(checkUpdatesRow);
+
+        OneUiSelectRow restartSysUiRow = new OneUiSelectRow(this)
+                .title(getString(R.string.row_restart_systemui))
+                .value(getString(R.string.val_restart_systemui));
+        restartSysUiRow.setOnClickListener(v -> OneUiDialog.showConfirm(
+                this,
+                getString(R.string.row_restart_systemui),
+                getString(R.string.confirm_restart_systemui_msg),
+                getString(R.string.action_restart),
+                this::restartSystemUi));
+        actionsGroup.addView(restartSysUiRow);
+        root.addView(actionsGroup);
+    }
+
+    private void restartSystemUi() {
+        toast(getString(R.string.toast_restarting_systemui));
+        try {
+            Intent intent = new Intent("com.s23.enhancements.ACTION_RESTART_SYSTEMUI");
+            intent.setPackage("com.android.systemui");
+            sendBroadcast(intent);
+        } catch (Throwable ignored) {
+        }
+        try {
+            Settings.Global.putLong(getContentResolver(),
+                    GLOBAL_PREFIX + "cmd_restart_systemui", System.currentTimeMillis());
+        } catch (Throwable ignored) {
+        }
+        new Thread(() -> {
+            try {
+                Thread.sleep(400L);
+                Process p = Runtime.getRuntime().exec(new String[]{
+                        "su", "-c", "killall com.android.systemui 2>/dev/null || pkill -x com.android.systemui 2>/dev/null"
+                });
+                p.waitFor();
+            } catch (Throwable ignored) {
+            }
+        }).start();
     }
 
     private void addFooter() {
@@ -500,6 +978,22 @@ public class MainActivity extends Activity {
         }
     }
 
+    private void mirrorIntToGlobal(String key, int value) {
+        try {
+            Settings.Global.putInt(getContentResolver(), GLOBAL_PREFIX + key, value);
+        } catch (Throwable t) {
+            android.util.Log.e("S23EnhancerApp", "mirrorInt failed for " + key + ": " + t);
+        }
+    }
+
+    private void mirrorStringToGlobal(String key, String value) {
+        try {
+            Settings.Global.putString(getContentResolver(), GLOBAL_PREFIX + key, value == null ? "" : value);
+        } catch (Throwable t) {
+            android.util.Log.e("S23EnhancerApp", "mirrorString failed for " + key + ": " + t);
+        }
+    }
+
     private void syncAllPrefsToGlobal() {
         for (String key : ALL_KEYS) {
             try {
@@ -507,20 +1001,52 @@ public class MainActivity extends Activity {
             } catch (Throwable ignored) {
             }
         }
+        for (String key : ALL_INT_KEYS) {
+            try {
+                mirrorIntToGlobal(key, mPrefs.getInt(key, defaultIntFor(key)));
+            } catch (Throwable ignored) {
+            }
+        }
+        for (String key : ALL_STRING_KEYS) {
+            try {
+                mirrorStringToGlobal(key, mPrefs.getString(key, defaultStringFor(key)));
+            } catch (Throwable ignored) {
+            }
+        }
     }
 
-    /** Defaults must match the ones used by the hooks (all features default to ON). */
     private boolean defaultFor(String key) {
+        if (KEY_SB_ONE_CONN_ICON.equals(key)
+                || KEY_SB_BACK_BUTTON.equals(key)
+                || KEY_SB_DOUBLE_TAP_SLEEP.equals(key)
+                || KEY_NOTIF_AUTO_EXPAND.equals(key)
+                || KEY_NOTIF_GROUPS_ONE_TAP.equals(key)) {
+            return false;
+        }
         return true;
+    }
+
+    private int defaultIntFor(String key) {
+        if (KEY_SB_EDGE_DP.equals(key)) return 4;
+        if (KEY_SB_ITEM_SPACING.equals(key)) return -1;
+        if (KEY_SB_TAP_VIBRATE_STRENGTH.equals(key)) return 1;
+        return 0;
+    }
+
+    private String defaultStringFor(String key) {
+        if (KEY_SB_HIDDEN_ICONS.equals(key)) return "";
+        return StatusBarActions.ACTION_NONE;
     }
 
     private void syncDependencies() {
         boolean modeOn = mPrefs.getBoolean(KEY_DISPLAY_SCREEN_MODE, true);
         boolean timeoutOn = mPrefs.getBoolean(KEY_DISPLAY_SCREEN_TIMEOUT, true);
         boolean actionOn = mPrefs.getBoolean(KEY_DISPLAY_ACTION_TIMEOUT, true);
+        boolean vibOn = mPrefs.getBoolean(KEY_SB_TAP_VIBRATE, true);
         if (mScreenModeRow != null) mScreenModeRow.setEnabled(modeOn);
         if (mScreenTimeoutRow != null) mScreenTimeoutRow.setEnabled(timeoutOn);
         if (mActionTimeoutRow != null) mActionTimeoutRow.setEnabled(actionOn);
+        if (mSbVibrateStrengthRow != null) mSbVibrateStrengthRow.setEnabled(vibOn);
     }
 
     // ------------------------------------------------------------------ pickers

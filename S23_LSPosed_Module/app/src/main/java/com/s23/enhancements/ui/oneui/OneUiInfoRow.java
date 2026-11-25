@@ -13,8 +13,8 @@ import android.widget.TextView;
  * Read-only One UI preference row for detail cards.
  *
  * Mirrors Samsung Settings: the label is the main title and the value sits on the second
- * line as a smaller secondary text (same pattern as "Stav baterie / Nabíjí se (USB)" in
- * Settings &gt; Baterie &gt; Informace o baterii). No ripple and no chevron.
+ * line as a smaller secondary text (same pattern as "Battery status / Charging (USB)" in
+ * Settings &gt; Battery &gt; Battery information). No ripple and no chevron.
  */
 public class OneUiInfoRow extends LinearLayout {
 

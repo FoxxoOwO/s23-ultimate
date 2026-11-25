@@ -1,139 +1,266 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">S23 Enhancer</string>
-    <string name="app_subtitle">Systémové a kamerové úpravy pro Galaxy S23 Ultra</string>
-    <string name="footer_note">Změny se projeví po restartu cílové aplikace. Modul vyžaduje aktivní LSPosed.</string>
+    <string name="app_subtitle">System, display, status bar &amp; camera tweaks for Galaxy S23 Ultra</string>
+    <string name="footer_note">Changes take effect after restarting the target app (or SystemUI). Requires active LSPosed.</string>
 
-    <!-- Sekce -->
-    <string name="sec_camera">Fotoaparát</string>
-    <string name="sec_display">Displej</string>
-    <string name="sec_system">Systém</string>
+    <!-- Sections -->
+    <string name="sec_camera">Camera</string>
+    <string name="sec_display">Display</string>
+    <string name="sec_system">System</string>
 
-    <!-- Fotoaparát -->
+    <!-- Camera -->
     <string name="title_camera_log_video">Log Video</string>
-    <string name="desc_camera_log_video">Aktivuje nativní Log profil v Pro Video pro maximální dynamický rozsah a color grading.</string>
-    <string name="title_camera_4k60_lenses">4K60 přepínání objektivů</string>
-    <string name="desc_camera_4k60_lenses">Umožňuje přepínání 0,6x, 1x, 3x a 10x objektivu při 4K 60 fps bez digitálního ořezu.</string>
-    <string name="title_camera_4k120_slowmo">4K120 slow-motion</string>
-    <string name="desc_camera_4k120_slowmo">Přidá 3840×2160 při 120 fps do režimu Zpomalený pohyb (skryté položky resolution mapy).</string>
-    <string name="title_camera_jpeg_100">100% kvalita</string>
-    <string name="title_camera_shutter_mute">Vypnutí zvuku závěrky</string>
-    <string name="desc_camera_shutter_mute">Umožní ztlumit zvuk závěrky fotoaparátu i v regionech, kde ho Samsung vynucuje (CSC zámek). Volba Zvuk závěrky se objeví v nastavení fotoaparátu.</string>
-    <string name="desc_camera_jpeg_100">Ukládá JPEG fotografie s kvalitou 100 % a vypíná dodatečnou kompresi.</string>
+    <string name="desc_camera_log_video">Enables native Samsung Log profile in Pro Video mode for maximum dynamic range and color grading.</string>
+    <string name="title_camera_4k60_lenses">4K60 Lens Switching</string>
+    <string name="desc_camera_4k60_lenses">Allows switching between 0.6x, 1x, 3x, and 10x lenses at 4K 60 fps without digital crop fallback.</string>
+    <string name="title_camera_4k120_slowmo">4K120 Slow Motion</string>
+    <string name="desc_camera_4k120_slowmo">Unlocks 3840x2160 at 120 fps in Slow Motion mode (hidden resolution map entry).</string>
+    <string name="title_camera_jpeg_100">100% JPEG Quality</string>
+    <string name="title_camera_shutter_mute">Shutter Sound Mute</string>
+    <string name="desc_camera_shutter_mute">Allows muting the camera shutter sound even in regions enforced by CSC lock. Adds the Shutter sound toggle in Camera settings.</string>
+    <string name="desc_camera_jpeg_100">Saves JPEG photos at 100% quality and disables extra recompression.</string>
 
-    <!-- Displej -->
-    <string name="title_display_outdoor">Venkovní režim</string>
-    <string name="desc_display_outdoor">Zpřístupní přepínač Venkovní režim v Nastavení &gt; Displej. Režim se zapíná tam, ne zde.</string>
-    <string name="title_display_screen_mode">Profily displeje</string>
-    <string name="desc_display_screen_mode">Odemkne profesionální profily AMOLED Cinema (DCI-P3) a AMOLED Photo (Adobe RGB).</string>
-    <string name="row_active_profile">Aktivní profil</string>
-    <string name="title_display_screen_timeout">Screen timeouty</string>
-    <string name="desc_display_screen_timeout">Odemkne 30 minut, 1 hodinu a možnost Nikdy v nabídce vypnutí obrazovky.</string>
-    <string name="row_screen_timeout">Vypnutí obrazovky</string>
-    <string name="title_display_action_timeout">Čas pro provedení akce</string>
-    <string name="desc_display_action_timeout">Nastaví dobu, po kterou systém čeká na potvrzení akce u asistivních funkcí.</string>
-    <string name="row_action_timeout">Doba čekání</string>
-    <string name="title_display_ead">Adaptivní barevný tón (EAD)</string>
-    <string name="desc_display_ead">Vynutí podporu adaptivního barevného tónu displeje v Nastavení.</string>
-    <string name="title_display_fonts">Odemčení fontů</string>
-    <string name="desc_display_fonts">Povolí instalaci a použití vlastních systémových fontů bez kontroly podpisu.</string>
+    <!-- Display -->
+    <string name="title_display_outdoor">Outdoor Mode</string>
+    <string name="desc_display_outdoor">Unlocks the Outdoor mode toggle in Settings &gt; Display (toggle it there or via the Quick Settings tile).</string>
+    <string name="title_display_screen_mode">Display Profiles</string>
+    <string name="desc_display_screen_mode">Unlocks AMOLED Cinema (DCI-P3) and AMOLED Photo (Adobe RGB) screen modes.</string>
+    <string name="row_active_profile">Active profile</string>
+    <string name="title_display_screen_timeout">Extended Screen Timeouts</string>
+    <string name="desc_display_screen_timeout">Unlocks 30 minutes, 1 hour, and Never options in Screen timeout.</string>
+    <string name="row_screen_timeout">Screen timeout</string>
+    <string name="title_display_action_timeout">Time to Take Action</string>
+    <string name="desc_display_action_timeout">Sets how long the system waits for confirmation on accessibility action prompts.</string>
+    <string name="row_action_timeout">Action timeout</string>
+    <string name="title_display_ead">Adaptive Color Tone (EAD)</string>
+    <string name="desc_display_ead">Forces Adaptive Color Tone support in Display settings.</string>
+    <string name="title_display_fonts">Unlock Custom Fonts</string>
+    <string name="desc_display_fonts">Allows installing and applying custom system fonts without signature checks.</string>
 
-    <!-- Systém -->
-    <string name="title_call_recording">Nahrávání hovorů</string>
-    <string name="desc_call_recording">Aktivuje nativní tlačítko nahrávání hovorů v aplikaci Telefon.</string>
-    <string name="title_wifi_passwords">Zobrazení hesel</string>
-    <string name="desc_wifi_passwords">Zobrazí uložená hesla Wi-Fi bez ověření zámku obrazovky.</string>
-    <string name="title_flag_secure">Obejití screenshotu</string>
-    <string name="desc_flag_secure">Povolí snímky obrazovky i v aplikacích chráněných příznakem FLAG_SECURE.</string>
-    <string name="title_telemetry">Zakázání telemetrie</string>
-    <string name="desc_telemetry">Vypne odesílání crash logů a systémových diagnostických záznamů.</string>
+    <!-- System -->
+    <string name="title_call_recording">Call Recording</string>
+    <string name="desc_call_recording">Enables the native call recording button in the Samsung Phone app.</string>
+    <string name="title_wifi_passwords">Show Wi-Fi Passwords</string>
+    <string name="desc_wifi_passwords">Displays saved Wi-Fi passwords in plain text without lock screen verification.</string>
+    <string name="title_flag_secure">Bypass Screenshot Restriction</string>
+    <string name="desc_flag_secure">Allows screenshots and screen recordings in apps protected by FLAG_SECURE.</string>
+    <string name="title_telemetry">Disable Telemetry</string>
+    <string name="desc_telemetry">Stops crash log uploads and system diagnostic reporting.</string>
 
-    <!-- Sdílení -->
-
-    <!-- Baterie -->
-    <string name="sec_battery">Baterie</string>
-    <string name="batt_level">Úroveň</string>
-    <string name="batt_status">Stav</string>
-    <string name="batt_source">Napájení</string>
-    <string name="batt_remaining">Zbývá do plného nabití</string>
-    <string name="batt_health">Zdraví</string>
-    <string name="batt_temp">Teplota</string>
-    <string name="batt_voltage">Napětí</string>
-    <string name="batt_current">Proud</string>
-    <string name="batt_power">Výkon</string>
-    <string name="batt_charge">Nabití</string>
-    <string name="batt_cycles">Cykly</string>
-    <string name="batt_tech">Technologie</string>
-    <string name="batt_protect">Ochrana baterie</string>
-    <string name="batt_status_charging">Nabíjí se</string>
-    <string name="batt_status_discharging">Vybíjí se</string>
-    <string name="batt_status_full">Nabitá</string>
-    <string name="batt_status_not_charging">Nenabíjí se</string>
-    <string name="batt_status_unknown">Neznámý</string>
-    <string name="batt_health_good">Dobrá</string>
-    <string name="batt_health_overheat">Přehřátá</string>
-    <string name="batt_health_dead">Vadná</string>
-    <string name="batt_health_over_voltage">Přepětí</string>
-    <string name="batt_health_failure">Závada</string>
-    <string name="batt_health_cold">Podchlazená</string>
-    <string name="batt_health_unknown">Neznámé</string>
-    <string name="batt_src_ac">Síťový adaptér</string>
+    <!-- Battery -->
+    <string name="sec_battery">Battery</string>
+    <string name="batt_level">Level</string>
+    <string name="batt_status">Status</string>
+    <string name="batt_source">Power source</string>
+    <string name="batt_remaining">Time until full</string>
+    <string name="batt_health">Health</string>
+    <string name="batt_temp">Temperature</string>
+    <string name="batt_voltage">Voltage</string>
+    <string name="batt_current">Current</string>
+    <string name="batt_power">Power</string>
+    <string name="batt_charge">Charge counter</string>
+    <string name="batt_cycles">Cycle count</string>
+    <string name="batt_tech">Technology</string>
+    <string name="batt_protect">Battery protection</string>
+    <string name="batt_status_charging">Charging</string>
+    <string name="batt_status_discharging">Discharging</string>
+    <string name="batt_status_full">Full</string>
+    <string name="batt_status_not_charging">Not charging</string>
+    <string name="batt_status_unknown">Unknown</string>
+    <string name="batt_health_good">Good</string>
+    <string name="batt_health_overheat">Overheat</string>
+    <string name="batt_health_dead">Dead</string>
+    <string name="batt_health_over_voltage">Over voltage</string>
+    <string name="batt_health_failure">Failure</string>
+    <string name="batt_health_cold">Cold</string>
+    <string name="batt_health_unknown">Unknown</string>
+    <string name="batt_src_ac">AC adapter</string>
     <string name="batt_src_usb">USB</string>
-    <string name="batt_src_wireless">Bezdrátově</string>
-    <string name="batt_src_dock">Dok</string>
-    <string name="batt_src_none">Bez napájení</string>
-    <string name="batt_protect_adaptive">Adaptivní (%1$d %%)</string>
-    <string name="batt_protect_on">Zapnuto (%1$d %%)</string>
-    <string name="batt_protect_off">Vypnuto</string>
+    <string name="batt_src_wireless">Wireless</string>
+    <string name="batt_src_dock">Dock</string>
+    <string name="batt_src_none">On battery</string>
+    <string name="batt_protect_adaptive">Adaptive (%1$d%%)</string>
+    <string name="batt_protect_on">Enabled (%1$d%%)</string>
+    <string name="batt_protect_off">Off</string>
     <string name="batt_hours_minutes">%1$d h %2$d min</string>
     <string name="batt_minutes">%1$d min</string>
 
-    <string name="title_battery_info">Podrobné informace o baterii</string>
-    <string name="desc_battery_info">Odemkne v Nastavení &gt; Baterie &gt; Informace o baterii řádky Zdraví baterie, Počet cyklů, Datum prvního použití a Datum výroby jako na novějších modelech. Hodnoty se čtou z privátních EFS uzlů, takže mohou zůstat prázdné.</string>
+    <string name="title_battery_info">Detailed Battery Info</string>
+    <string name="desc_battery_info">Unlocks Battery health, Cycle count, First used date, and Manufacture date rows in Settings &gt; Battery &gt; Battery information. Values depend on private EFS nodes and may stay blank.</string>
 
-    <!-- Profily displeje -->
-    <string name="mode_vivid">Živý</string>
-    <string name="mode_natural">Přírodní</string>
-    <string name="mode_cinema">Kino AMOLED</string>
-    <string name="mode_photo">Fotografie AMOLED</string>
-    <string name="mode_basic">Základní</string>
+    <!-- Display profiles -->
+    <string name="mode_vivid">Vivid</string>
+    <string name="mode_natural">Natural</string>
+    <string name="mode_cinema">AMOLED Cinema</string>
+    <string name="mode_photo">AMOLED Photo</string>
+    <string name="mode_basic">Basic</string>
 
-    <!-- Screen timeouty -->
-    <string name="timeout_15s">15 sekund</string>
-    <string name="timeout_30s">30 sekund</string>
-    <string name="timeout_1m">1 minuta</string>
-    <string name="timeout_2m">2 minuty</string>
-    <string name="timeout_5m">5 minut</string>
-    <string name="timeout_10m">10 minut</string>
-    <string name="timeout_30m">30 minut</string>
-    <string name="timeout_1h">1 hodina</string>
-    <string name="timeout_never">Nikdy</string>
+    <!-- Screen timeouts -->
+    <string name="timeout_15s">15 seconds</string>
+    <string name="timeout_30s">30 seconds</string>
+    <string name="timeout_1m">1 minute</string>
+    <string name="timeout_2m">2 minutes</string>
+    <string name="timeout_5m">5 minutes</string>
+    <string name="timeout_10m">10 minutes</string>
+    <string name="timeout_30m">30 minutes</string>
+    <string name="timeout_1h">1 hour</string>
+    <string name="timeout_never">Never</string>
 
-    <!-- Čas pro provedení akce -->
-    <string name="action_default">Výchozí</string>
-    <string name="action_5s">5 sekund</string>
-    <string name="action_10s">10 sekund</string>
-    <string name="action_20s">20 sekund</string>
-    <string name="action_30s">30 sekund</string>
-    <string name="action_1m">1 minuta</string>
-    <string name="action_2m">2 minuty</string>
-    <string name="action_5m">5 minut</string>
-    <string name="action_custom">Vlastní…</string>
-    <string name="action_custom_title">Vlastní čas (sekundy)</string>
-    <string name="action_custom_hint">Např. 45</string>
-    <string name="action_set">Nastavit</string>
+    <!-- Action timeouts -->
+    <string name="action_default">Default</string>
+    <string name="action_5s">5 seconds</string>
+    <string name="action_10s">10 seconds</string>
+    <string name="action_20s">20 seconds</string>
+    <string name="action_30s">30 seconds</string>
+    <string name="action_1m">1 minute</string>
+    <string name="action_2m">2 minutes</string>
+    <string name="action_5m">5 minutes</string>
+    <string name="action_custom">Custom…</string>
+    <string name="action_custom_title">Custom duration (seconds)</string>
+    <string name="action_custom_hint">e.g. 45</string>
+    <string name="action_set">Apply</string>
 
-    <!-- Stav a hlášky -->
-    <string name="status_supported">Podporováno</string>
-    <string name="status_test_device">Testovací zařízení</string>
-    <string name="toast_saved">Nastavení uloženo</string>
-    <string name="toast_error">Chyba nastavení: %1$s</string>
-    <string name="toast_invalid_value">Zadejte platné číslo</string>
-    <string name="toast_screen_mode">Profil displeje: %1$s</string>
-    <string name="toast_screen_timeout">Vypnutí obrazovky: %1$s</string>
-    <string name="toast_action_timeout">Doba akce: %1$s</string>
+    <!-- Status & messages -->
+    <string name="status_supported">Supported</string>
+    <string name="status_test_device">Test device</string>
+    <string name="toast_saved">Settings saved</string>
+    <string name="toast_error">Failed to apply setting: %1$s</string>
+    <string name="toast_invalid_value">Enter a valid number</string>
+    <string name="toast_screen_mode">Display profile: %1$s</string>
+    <string name="toast_screen_timeout">Screen timeout: %1$s</string>
+    <string name="toast_action_timeout">Action timeout: %1$s</string>
 
     <!-- Quick Settings -->
-    <string name="tile_outdoor_mode">Venkovní režim</string>
-    <string name="tile_outdoor_disabled">Vypnuto v S23 Enhanceru</string>
+    <string name="tile_outdoor_mode">Outdoor Mode</string>
+    <string name="tile_outdoor_disabled">Disabled in S23 Enhancer</string>
+    <string name="tile_outdoor_on">1200 nits</string>
+    <string name="tile_outdoor_off">Off</string>
+
+    <!-- Status Bar -->
+    <string name="sec_statusbar">Status Bar</string>
+    <string name="sb_row_edge_space">Space at screen edges</string>
+    <string name="sb_edge_samsung">Samsung’s default</string>
+    <string name="sb_edge_tight">Tight (4 dp)</string>
+    <string name="sb_edge_custom">Custom…</string>
+    <string name="sb_edge_custom_val">Custom (%1$d dp)</string>
+    <string name="sb_edge_custom_title">Edge spacing (0–32 dp)</string>
+    <string name="sb_edge_custom_hint">e.g. 4</string>
+
+    <string name="sb_row_item_spacing">Space between items</string>
+    <string name="sb_item_spacing_sub">Less space leaves more room for icons.</string>
+    <string name="sb_item_spacing_val">%1$d dp</string>
+    <string name="sb_reset">Reset</string>
+    <string name="sb_save">Save</string>
+
+    <string name="sb_row_max_notif_icons">Notification icons shown</string>
+    <string name="sb_max_notif_sub">Samsung defaults to 3 app icons, then a dot for the rest.</string>
+    <string name="sb_max_notif_val">%1$d icons</string>
+
+    <string name="sb_row_hidden_icons">Choose visible status icons</string>
+    <string name="sb_hidden_none">None hidden</string>
+    <string name="sb_hidden_count">Hidden: %1$d</string>
+
+    <string name="sb_icon_wifi">Wi-Fi</string>
+    <string name="sb_icon_mobile">Mobile signal</string>
+    <string name="sb_icon_bluetooth">Bluetooth</string>
+    <string name="sb_icon_alarm">Alarm clock</string>
+    <string name="sb_icon_volume">Volume / Vibrate</string>
+    <string name="sb_icon_nfc">NFC</string>
+    <string name="sb_icon_location">Location</string>
+    <string name="sb_icon_vpn">VPN</string>
+    <string name="sb_icon_hotspot">Hotspot</string>
+    <string name="sb_icon_headset">Headset</string>
+    <string name="sb_icon_zen">Do not disturb</string>
+    <string name="sb_icon_ims_volte">VoLTE / IMS</string>
+    <string name="sb_icon_secure_folder">Secure Folder</string>
+    <string name="sb_icon_airplane">Airplane mode</string>
+    <string name="sb_icon_cast">Screen cast</string>
+    <string name="sb_icon_rotate">Auto rotate</string>
+    <string name="sb_icon_data_saver">Data saver</string>
+    <string name="sb_icon_power_saver">Power saving</string>
+    <string name="sb_icon_clock">Clock</string>
+    <string name="sb_icon_battery">Battery</string>
+
+    <string name="title_sb_one_conn">One connection icon</string>
+    <string name="desc_sb_one_conn">Hides the mobile signal icon while connected to Wi-Fi.</string>
+    <string name="title_sb_back_btn">Show a back button</string>
+    <string name="desc_sb_back_btn">Adds a compact Back chevron (&lt;) at the left edge of the status bar.</string>
+    <string name="title_sb_burn_in">Protect against screen burn-in</string>
+    <string name="desc_sb_burn_in">Periodically shifts status bar items by a few pixels (Samsung pixel-shift).</string>
+
+    <!-- Status Bar Taps & Feedback -->
+    <string name="sec_sb_taps">Status Bar Taps &amp; Feedback</string>
+    <string name="title_sb_double_tap_sleep">Double-tap to turn the screen off</string>
+    <string name="desc_sb_double_tap_sleep">Double-tap any empty spot on the status bar to lock the screen.</string>
+    <string name="title_sb_vibrate">Vibrate on tap</string>
+    <string name="desc_sb_vibrate">Haptic feedback when tapping or long-pressing a status bar target.</string>
+    <string name="sb_row_vibrate_strength">Vibration strength</string>
+    <string name="sb_vib_light">Light</string>
+    <string name="sb_vib_medium">Medium</string>
+    <string name="sb_vib_strong">Strong</string>
+
+    <string name="sb_tap_batt">Battery icon — Tap</string>
+    <string name="sb_long_batt">Battery icon — Long-press</string>
+    <string name="sb_tap_clock">Clock — Tap</string>
+    <string name="sb_long_clock">Clock — Long-press</string>
+    <string name="sb_tap_hole">Front camera hole — Tap</string>
+    <string name="sb_long_hole">Front camera hole — Long-press</string>
+    <string name="sb_tap_wifi">Wi-Fi icon — Tap</string>
+    <string name="sb_long_wifi">Wi-Fi icon — Long-press</string>
+    <string name="sb_tap_mobile">Mobile signal icon — Tap</string>
+    <string name="sb_long_mobile">Mobile signal icon — Long-press</string>
+    <string name="sb_action_test">Test</string>
+
+    <!-- Status Bar Actions -->
+    <string name="sb_act_none">Do nothing</string>
+    <string name="sb_act_sleep">Turn screen off</string>
+    <string name="sb_act_power_saving">Power saving mode</string>
+    <string name="sb_act_battery_usage">Battery usage</string>
+    <string name="sb_act_alarms">Alarms</string>
+    <string name="sb_act_timer">Timer</string>
+    <string name="sb_act_finder">Samsung Finder (search)</string>
+    <string name="sb_act_flashlight">Flashlight</string>
+    <string name="sb_act_screenshot">Screenshot</string>
+    <string name="sb_act_expand_notifications">Open notifications</string>
+    <string name="sb_act_expand_qs">Quick settings</string>
+    <string name="sb_act_wifi_toggle">Toggle Wi-Fi</string>
+    <string name="sb_act_wifi_settings">Wi-Fi settings</string>
+    <string name="sb_act_mobile_settings">Mobile networks</string>
+    <string name="sb_act_bluetooth_settings">Bluetooth settings</string>
+    <string name="sb_act_volume_panel">Volume panel</string>
+    <string name="sb_act_back">Back</string>
+    <string name="sb_act_home">Home</string>
+    <string name="sb_act_recents">Recents</string>
+
+    <!-- Notifications -->
+    <string name="sec_notifications">Notifications</string>
+    <string name="title_notif_auto_expand">Open notifications fully</string>
+    <string name="desc_notif_auto_expand">Automatically expands notifications in the shade (applies on the next panel update).</string>
+    <string name="title_notif_groups_one_tap">Groups open fully with one tap</string>
+    <string name="desc_notif_groups_one_tap">Expanding a notification group opens all child notifications inside it as well.</string>
+    <string name="title_notif_keep_silent_small">Keep silent ones small</string>
+    <string name="desc_notif_keep_silent_small">Keeps silent and low-priority notifications collapsed.</string>
+
+    <!-- Restart SystemUI & Auto-Updater -->
+    <string name="row_restart_systemui">Restart SystemUI</string>
+    <string name="val_restart_systemui">Apply changes</string>
+    <string name="confirm_restart_systemui_msg">Only restarts SystemUI (the phone does not reboot). The screen will flash briefly.</string>
+    <string name="action_restart">Restart</string>
+    <string name="toast_restarting_systemui">Restarting SystemUI…</string>
+
+    <string name="title_auto_update">Automatic updates</string>
+    <string name="desc_auto_update">Check GitHub Releases on launch and prompt when a new version is available.</string>
+    <string name="row_check_updates">Check for updates</string>
+    <string name="val_version">v%1$s</string>
+    <string name="update_checking">Checking for updates…</string>
+    <string name="update_up_to_date">You are on the latest version (v%1$s)</string>
+    <string name="update_available_title">Update available (%1$s)</string>
+    <string name="update_action_install">Download &amp; install</string>
+    <string name="update_downloading">Downloading update…</string>
+    <string name="update_installing">Starting installer…</string>
+    <string name="update_installed">Update installed</string>
+    <string name="update_failed">Update check failed: %1$s</string>
+    <string name="update_perm_required">Allow installing updates from S23 Enhancer</string>
+    <string name="update_no_apk">Opening release page in browser…</string>
 </resources>

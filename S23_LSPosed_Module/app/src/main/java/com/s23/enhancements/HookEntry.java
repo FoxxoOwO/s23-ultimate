@@ -61,14 +61,22 @@ public class HookEntry extends XposedModule {
     private static final String GLOBAL_PREFIX = "s23enh_";
 
     private SharedPreferences mPrefs;
+    private volatile Context mAppContext;
     private Context mSystemContext;
+    private String mProcessName;
+
+    void setAppContext(Context ctx) {
+        if (ctx == null) return;
+        Context app = ctx.getApplicationContext();
+        mAppContext = app != null ? app : ctx;
+    }
 
     public HookEntry() {
         super();
         Log.i(TAG, "=== HookEntry instantiated in PID " + Process.myPid() + " ===");
     }
 
-    private boolean isPref(String key, boolean defVal) {
+    boolean isPref(String key, boolean defVal) {
         // 1) Settings.Global mirror written by the companion app (authoritative, never cached).
         try {
             Context ctx = systemContext();
@@ -96,14 +104,57 @@ public class HookEntry extends XposedModule {
         return defVal;
     }
 
+    int getIntPref(String key, int defVal) {
+        try {
+            Context ctx = systemContext();
+            if (ctx != null) {
+                return Settings.Global.getInt(ctx.getContentResolver(), GLOBAL_PREFIX + key, defVal);
+            }
+        } catch (Throwable ignored) {
+        }
+        return defVal;
+    }
+
+    String getStringPref(String key, String defVal) {
+        try {
+            Context ctx = systemContext();
+            if (ctx != null) {
+                String v = Settings.Global.getString(ctx.getContentResolver(), GLOBAL_PREFIX + key);
+                if (v != null) return v;
+            }
+        } catch (Throwable ignored) {
+        }
+        return defVal;
+    }
+
+    void hookConstructors(Class<?> clazz, XposedInterface.Hooker hooker) {
+        if (clazz == null) return;
+        for (Constructor<?> c : clazz.getDeclaredConstructors()) {
+            try {
+                hook(c).intercept(hooker);
+            } catch (Throwable t) {
+                Log.w(TAG, "Failed to hook constructor on " + clazz.getName() + ": " + t.getMessage());
+            }
+        }
+    }
+
     /**
      * System context usable from any injected process, including before the app context
      * exists (onPackageReady runs before Application#onCreate).
      */
     private Context systemContext() {
+        if (mAppContext != null) return mAppContext;
         if (mSystemContext != null) return mSystemContext;
         try {
             Class<?> at = Class.forName("android.app.ActivityThread");
+            try {
+                Object app = at.getMethod("currentApplication").invoke(null);
+                if (app instanceof Context) {
+                    mAppContext = (Context) app;
+                    return mAppContext;
+                }
+            } catch (Throwable ignored) {
+            }
             Object thread = at.getMethod("currentActivityThread").invoke(null);
             if (thread == null) return null;
             Method getSystemContext = at.getDeclaredMethod("getSystemContext");
@@ -114,7 +165,7 @@ public class HookEntry extends XposedModule {
         return mSystemContext;
     }
 
-    private void hookAllMethods(Class<?> clazz, String methodName, XposedInterface.Hooker hooker) {
+    void hookAllMethods(Class<?> clazz, String methodName, XposedInterface.Hooker hooker) {
         if (clazz == null) return;
         for (Method m : clazz.getDeclaredMethods()) {
             if (m.getName().equals(methodName)) {
@@ -129,7 +180,8 @@ public class HookEntry extends XposedModule {
 
     @Override
     public void onModuleLoaded(ModuleLoadedParam param) {
-        Log.i(TAG, "=== onModuleLoaded: process=" + param.getProcessName() + ", isSystemServer=" + param.isSystemServer() + " ===");
+        mProcessName = param.getProcessName();
+        Log.i(TAG, "=== onModuleLoaded: process=" + mProcessName + ", isSystemServer=" + param.isSystemServer() + " ===");
     }
 
     @Override
@@ -169,7 +221,11 @@ public class HookEntry extends XposedModule {
             } else if ("com.android.settings".equals(pkg)) {
                 hookSettings(cl);
             } else if ("com.android.systemui".equals(pkg)) {
-                hookSystemUI(cl);
+                if (mProcessName == null || "com.android.systemui".equals(mProcessName)) {
+                    hookSystemUI(cl);
+                } else {
+                    Log.i(TAG, "Skipping SystemUI hooks in secondary process: " + mProcessName);
+                }
             }
         } catch (Throwable t) {
             Log.e(TAG, "Error in onPackageReady for " + pkg, t);
@@ -1009,7 +1065,7 @@ public class HookEntry extends XposedModule {
             Log.w(TAG, "Failed to hook SecAccessibilityControlTimeoutPreferenceFragment: " + t.getMessage());
         }
 
-        // 6. Outdoor Mode (Venkovní režim) in Settings > Display
+        // 6. Outdoor Mode in Settings > Display
         try {
             Class<?> outdoorCls = cl.loadClass("com.samsung.android.settings.display.controller.SecOutDoorModePreferenceController");
             hookAllMethods(outdoorCls, "isAvailable", chain -> {
@@ -1230,6 +1286,8 @@ public class HookEntry extends XposedModule {
         } catch (Throwable t) {
             Log.w(TAG, "Failed to hook BrightnessDetailAdapter: " + t.getMessage());
         }
+
+        SystemUiHooks.install(this, cl);
     }
 
     private <T extends View> void findViews(View root, Class<T> clazz, List<T> results) {
