@@ -7,3 +7,5 @@ com.samsung.android.incallui
 com.samsung.android.dialer
 com.samsung.android.app.telephonyui
 com.android.phone
+com.samsung.android.app.aodservice
+com.samsung.android.app.dressroom

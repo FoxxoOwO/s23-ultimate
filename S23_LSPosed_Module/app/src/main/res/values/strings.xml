@@ -137,6 +137,13 @@
     <string name="tile_outdoor_on">1200 nits</string>
     <string name="tile_outdoor_off">Off</string>
 
+    <!-- Lock Screen -->
+    <string name="sec_lockscreen">Lock Screen</string>
+    <string name="row_lockscreen_widget_rows">Lock screen widget rows</string>
+    <string name="ls_rows_default">Samsung’s default (1 row / 4 slots)</string>
+    <string name="ls_rows_2">2 rows (up to 8 widgets)</string>
+    <string name="ls_rows_3">3 rows (up to 12 widgets)</string>
+
     <!-- Status Bar -->
     <string name="sec_statusbar">Status Bar</string>
     <string name="sb_row_edge_space">Space at screen edges</string>

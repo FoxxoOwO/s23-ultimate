@@ -71,6 +71,9 @@ public class MainActivity extends AppCompatActivity {
     // Battery
     public static final String KEY_BATTERY_INFO = "pref_system_battery_info";
 
+    // Lock screen
+    public static final String KEY_LOCKSCREEN_WIDGET_ROWS = "pref_lockscreen_widget_rows";
+
     // Status bar
     public static final String KEY_SB_EDGE_MODE = "pref_sb_edge_space_mode";
     public static final String KEY_SB_EDGE_DP = "pref_sb_edge_space_dp";
@@ -157,6 +160,7 @@ public class MainActivity extends AppCompatActivity {
     };
 
     private static final String[] ALL_INT_KEYS = {
+            KEY_LOCKSCREEN_WIDGET_ROWS,
             KEY_SB_EDGE_MODE, KEY_SB_EDGE_DP, KEY_SB_ITEM_SPACING,
             KEY_SB_MAX_NOTIF_ICONS, KEY_SB_TAP_VIBRATE_STRENGTH
     };
@@ -300,6 +304,7 @@ public class MainActivity extends AppCompatActivity {
         private Preference mScreenModeRow;
         private Preference mScreenTimeoutRow;
         private Preference mActionTimeoutRow;
+        private Preference mLockscreenWidgetRowsRow;
         private Preference mSbEdgeSpaceRow;
         private Preference mSbItemSpacingRow;
         private Preference mSbMaxNotifRow;
@@ -326,6 +331,7 @@ public class MainActivity extends AppCompatActivity {
             addBatterySection(screen, ctx);
             addCameraSection(screen, ctx);
             addDisplaySection(screen, ctx);
+            addLockScreenSection(screen, ctx);
             addStatusBarSection(screen, ctx);
             addStatusBarTapsSection(screen, ctx);
             addNotificationsSection(screen, ctx);
@@ -347,6 +353,7 @@ public class MainActivity extends AppCompatActivity {
             syncScreenModeFromSystem();
             syncScreenTimeoutFromSystem();
             syncActionTimeoutFromSystem();
+            syncLockScreenSummary();
             syncStatusBarSummaries();
             syncVibrateStrengthSummary();
             syncDependencies();
@@ -502,6 +509,47 @@ public class MainActivity extends AppCompatActivity {
 
             switchPref(cat, ctx, KEY_DISPLAY_EAD, R.string.title_display_ead, R.string.desc_display_ead, true);
             switchPref(cat, ctx, KEY_DISPLAY_FONTS, R.string.title_display_fonts, R.string.desc_display_fonts, true);
+        }
+
+        private void addLockScreenSection(PreferenceScreen screen, Context ctx) {
+            PreferenceCategory cat = category(screen, ctx, R.string.sec_lockscreen);
+            mLockscreenWidgetRowsRow = actionPref(cat, ctx, R.string.row_lockscreen_widget_rows);
+            mLockscreenWidgetRowsRow.setOnPreferenceClickListener(p -> {
+                pickLockscreenWidgetRows();
+                return true;
+            });
+            syncLockScreenSummary();
+        }
+
+        private void pickLockscreenWidgetRows() {
+            final CharSequence[] labels = {
+                    getString(R.string.ls_rows_default),
+                    getString(R.string.ls_rows_2),
+                    getString(R.string.ls_rows_3)
+            };
+            final int[] values = {0, 2, 3};
+            int cur = prefs().getInt(KEY_LOCKSCREEN_WIDGET_ROWS, 0);
+            int checked = cur == 2 ? 1 : (cur == 3 ? 2 : 0);
+            OneUiDialog.showSingleChoice(
+                    host(),
+                    getString(R.string.row_lockscreen_widget_rows),
+                    labels,
+                    checked,
+                    which -> {
+                        int val = values[which];
+                        prefs().edit().putInt(KEY_LOCKSCREEN_WIDGET_ROWS, val).apply();
+                        host().mirrorIntToGlobal(KEY_LOCKSCREEN_WIDGET_ROWS, val);
+                        host().updatePermissions();
+                        syncLockScreenSummary();
+                        toast(getString(R.string.toast_saved));
+                    });
+        }
+
+        private void syncLockScreenSummary() {
+            if (mLockscreenWidgetRowsRow == null || getActivity() == null) return;
+            int v = prefs().getInt(KEY_LOCKSCREEN_WIDGET_ROWS, 0);
+            int res = v == 2 ? R.string.ls_rows_2 : (v == 3 ? R.string.ls_rows_3 : R.string.ls_rows_default);
+            mLockscreenWidgetRowsRow.setSummary(res);
         }
 
         private void addStatusBarSection(PreferenceScreen screen, Context ctx) {

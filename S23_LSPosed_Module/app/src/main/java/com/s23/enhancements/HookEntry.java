@@ -45,6 +45,14 @@ public class HookEntry extends XposedModule {
     /** Battery info: unlock the EU-regulatory rows (health, cycles, dates) in Settings. */
     private static final String PREF_BATTERY_INFO = "pref_system_battery_info";
 
+    /** Lock screen: max ComplicationWidget grid rows (0 = Samsung default 1 row, 2-3 = expanded). */
+    private static final String PREF_LOCKSCREEN_WIDGET_ROWS = "pref_lockscreen_widget_rows";
+    private static final String COMPLICATION_SIZE_MANAGER_CLASS =
+            "com.samsung.android.app.facewidget.complication.ComplicationWidgetSizeManager";
+    private final java.util.Set<Class<?>> mHookedComplicationManagers =
+            java.util.Collections.newSetFromMap(new java.util.WeakHashMap<>());
+    private volatile boolean mLoggedLockscreenWidgetOverride;
+
     /** Cached camera toggles (read once per hooked camera process, hot path). */
     private volatile boolean mCamLogVideo = true;
     private volatile boolean mCamLenses = true;
@@ -226,6 +234,9 @@ public class HookEntry extends XposedModule {
                 } else {
                     Log.i(TAG, "Skipping SystemUI hooks in secondary process: " + mProcessName);
                 }
+            } else if ("com.samsung.android.app.aodservice".equals(pkg) ||
+                       "com.samsung.android.app.dressroom".equals(pkg)) {
+                hookLockscreenWidgets(cl, pkg);
             }
         } catch (Throwable t) {
             Log.e(TAG, "Error in onPackageReady for " + pkg, t);
@@ -1288,6 +1299,91 @@ public class HookEntry extends XposedModule {
         }
 
         SystemUiHooks.install(this, cl);
+        hookLockscreenWidgets(cl, "com.android.systemui");
+    }
+
+    /**
+     * Expands the One UI lock screen ComplicationWidget grid past Samsung's 1-row phone limit
+     * by intercepting {@code ComplicationWidgetSizeManager#getRow()} across direct and plugin
+     * ClassLoaders (SystemUI, AODService, and Wallpaper & Style DressRoom).
+     */
+    private void hookLockscreenWidgets(ClassLoader cl, String pkg) {
+        try {
+            Class<?> cls = cl.loadClass(COMPLICATION_SIZE_MANAGER_CLASS);
+            hookComplicationSizeManager(cls, pkg + ":direct");
+        } catch (Throwable ignored) {
+        }
+
+        if ("com.android.systemui".equals(pkg) || "com.samsung.android.app.dressroom".equals(pkg)) {
+            try {
+                hookConstructors(dalvik.system.PathClassLoader.class, chain -> {
+                    Object res = chain.proceed();
+                    Object thisObj = chain.getThisObject();
+                    if (thisObj instanceof ClassLoader) {
+                        String arg0 = (!chain.getArgs().isEmpty() && chain.getArg(0) instanceof String)
+                                ? (String) chain.getArg(0) : "";
+                        String desc = thisObj.toString();
+                        if (arg0.contains("aodservice") || (desc != null && desc.contains("aodservice"))) {
+                            try {
+                                Class<?> cls = ((ClassLoader) thisObj).loadClass(COMPLICATION_SIZE_MANAGER_CLASS);
+                                hookComplicationSizeManager(cls, pkg + ":pathcl");
+                            } catch (Throwable ignored) {
+                            }
+                        }
+                    }
+                    return res;
+                });
+            } catch (Throwable t) {
+                Log.w(TAG, "Failed to hook PathClassLoader ctors in " + pkg + ": " + t.getMessage());
+            }
+
+            try {
+                Method loadClassMethod = ClassLoader.class.getDeclaredMethod("loadClass", String.class, boolean.class);
+                hook(loadClassMethod).intercept(chain -> {
+                    Object res = chain.proceed();
+                    if (!chain.getArgs().isEmpty()
+                            && COMPLICATION_SIZE_MANAGER_CLASS.equals(chain.getArg(0))
+                            && res instanceof Class<?>) {
+                        hookComplicationSizeManager((Class<?>) res, pkg + ":loadClass");
+                    }
+                    return res;
+                });
+            } catch (Throwable t) {
+                Log.w(TAG, "Failed to hook ClassLoader.loadClass in " + pkg + ": " + t.getMessage());
+            }
+        }
+    }
+
+    private void hookComplicationSizeManager(Class<?> cls, String source) {
+        if (cls == null) return;
+        synchronized (mHookedComplicationManagers) {
+            if (!mHookedComplicationManagers.add(cls)) return;
+        }
+        hookAllMethods(cls, "getRow", chain -> {
+            Object orig = chain.proceed();
+            if (orig instanceof Integer && ((Integer) orig) == 1) {
+                int want = getIntPref(PREF_LOCKSCREEN_WIDGET_ROWS, 0);
+                if (want >= 2 && want <= 4) {
+                    if (!mLoggedLockscreenWidgetOverride) {
+                        mLoggedLockscreenWidgetOverride = true;
+                        Log.i(TAG, "Lockscreen widget rows override (" + source + "): 1 -> " + want);
+                    }
+                    return want;
+                }
+            }
+            return orig;
+        });
+        hookAllMethods(cls, "isBiggerSize", chain -> {
+            Object orig = chain.proceed();
+            if (orig instanceof Boolean && !((Boolean) orig)) {
+                int want = getIntPref(PREF_LOCKSCREEN_WIDGET_ROWS, 0);
+                if (want >= 2 && want <= 4) {
+                    return true;
+                }
+            }
+            return orig;
+        });
+        Log.i(TAG, "Hooked ComplicationWidgetSizeManager#getRow+isBiggerSize (" + source + ") in PID " + Process.myPid());
     }
 
     private <T extends View> void findViews(View root, Class<T> clazz, List<T> results) {

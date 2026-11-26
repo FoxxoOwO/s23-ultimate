@@ -10,5 +10,7 @@
         <item>com.samsung.android.dialer</item>
         <item>com.samsung.android.app.telephonyui</item>
         <item>com.android.phone</item>
+        <item>com.samsung.android.app.aodservice</item>
+        <item>com.samsung.android.app.dressroom</item>
     </string-array>
 </resources>

@@ -2,6 +2,13 @@
 
 All notable changes to **S23 Ultra Enhancements** are documented in this file.
 
+## [2.4] - 2026-11-26
+
+### Added
+- **Lock Screen → Lock screen widget rows** (`pref_lockscreen_widget_rows`): expands the One UI 9 lock screen Complication Widget grid from Samsung's 1-row (4-slot) phone limit to **2 rows (up to 8 widgets)** or **3 rows (up to 12 widgets)**.
+- Hooks `ComplicationWidgetSizeManager#getRow()` and `ComplicationWidgetSizeManager#isBiggerSize()` across `com.android.systemui`, `com.samsung.android.app.aodservice`, and `com.samsung.android.app.dressroom` (including dynamic plugin `ClassLoader` resolution) so both the live lock screen/AOD and the Wallpaper & Style editor switch to Samsung's 2D multi-row layout rules (`BigComplicationFitSortPositionRule` / `BigComplicationGridDragAndDropRule`).
+- Added `com.samsung.android.app.aodservice` and `com.samsung.android.app.dressroom` to `scope.list` and `xposed_scope`.
+
 ## [2.3] - 2026-11-25
 
 ### Added
