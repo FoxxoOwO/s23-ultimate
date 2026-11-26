@@ -83,6 +83,9 @@ public class MainActivity extends AppCompatActivity {
     public static final String KEY_SB_ONE_CONN_ICON = "pref_sb_one_connection_icon";
     public static final String KEY_SB_BACK_BUTTON = "pref_sb_back_button";
     public static final String KEY_SB_BURN_IN = "pref_sb_burn_in_protect";
+    public static final String KEY_SB_NET_SPEED = "pref_sb_net_speed";
+    public static final String KEY_SB_NET_SPEED_MODE = "pref_sb_net_speed_mode";
+    public static final String KEY_SB_NET_SPEED_AUTO_HIDE = "pref_sb_net_speed_auto_hide";
 
     // Status bar taps & feedback
     public static final String KEY_SB_DOUBLE_TAP_SLEEP = "pref_sb_double_tap_sleep";
@@ -155,6 +158,7 @@ public class MainActivity extends AppCompatActivity {
             KEY_SYSTEM_FLAG_SECURE, KEY_SYSTEM_TELEMETRY,
             KEY_BATTERY_INFO,
             KEY_SB_ONE_CONN_ICON, KEY_SB_BACK_BUTTON, KEY_SB_BURN_IN,
+            KEY_SB_NET_SPEED, KEY_SB_NET_SPEED_AUTO_HIDE,
             KEY_SB_DOUBLE_TAP_SLEEP, KEY_SB_TAP_VIBRATE,
             KEY_NOTIF_AUTO_EXPAND, KEY_NOTIF_GROUPS_ONE_TAP, KEY_NOTIF_KEEP_SILENT_SMALL
     };
@@ -162,7 +166,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String[] ALL_INT_KEYS = {
             KEY_LOCKSCREEN_WIDGET_ROWS,
             KEY_SB_EDGE_MODE, KEY_SB_EDGE_DP, KEY_SB_ITEM_SPACING,
-            KEY_SB_MAX_NOTIF_ICONS, KEY_SB_TAP_VIBRATE_STRENGTH
+            KEY_SB_MAX_NOTIF_ICONS, KEY_SB_NET_SPEED_MODE, KEY_SB_TAP_VIBRATE_STRENGTH
     };
 
     private static final String[] ALL_STRING_KEYS = {
@@ -252,6 +256,7 @@ public class MainActivity extends AppCompatActivity {
     private static boolean defaultFor(String key) {
         if (KEY_SB_ONE_CONN_ICON.equals(key)
                 || KEY_SB_BACK_BUTTON.equals(key)
+                || KEY_SB_NET_SPEED.equals(key)
                 || KEY_SB_DOUBLE_TAP_SLEEP.equals(key)
                 || KEY_NOTIF_AUTO_EXPAND.equals(key)
                 || KEY_NOTIF_GROUPS_ONE_TAP.equals(key)) {
@@ -309,6 +314,8 @@ public class MainActivity extends AppCompatActivity {
         private Preference mSbItemSpacingRow;
         private Preference mSbMaxNotifRow;
         private Preference mSbHiddenIconsRow;
+        private Preference mSbNetSpeedModeRow;
+        private SwitchPreferenceCompat mSbNetSpeedAutoHideSwitch;
         private Preference mSbVibrateStrengthRow;
 
         private final BroadcastReceiver mBatteryReceiver = new BroadcastReceiver() {
@@ -582,6 +589,17 @@ public class MainActivity extends AppCompatActivity {
             switchPref(cat, ctx, KEY_SB_ONE_CONN_ICON, R.string.title_sb_one_conn, R.string.desc_sb_one_conn, false);
             switchPref(cat, ctx, KEY_SB_BACK_BUTTON, R.string.title_sb_back_btn, R.string.desc_sb_back_btn, false);
             switchPref(cat, ctx, KEY_SB_BURN_IN, R.string.title_sb_burn_in, R.string.desc_sb_burn_in, true);
+            switchPref(cat, ctx, KEY_SB_NET_SPEED, R.string.title_sb_net_speed, R.string.desc_sb_net_speed, false);
+
+            mSbNetSpeedModeRow = actionPref(cat, ctx, R.string.sb_row_net_speed_mode);
+            mSbNetSpeedModeRow.setOnPreferenceClickListener(p -> {
+                pickNetSpeedMode();
+                return true;
+            });
+
+            mSbNetSpeedAutoHideSwitch = switchPref(
+                    cat, ctx, KEY_SB_NET_SPEED_AUTO_HIDE,
+                    R.string.title_sb_net_speed_auto_hide, R.string.desc_sb_net_speed_auto_hide, true);
         }
 
         private void addStatusBarTapsSection(PreferenceScreen screen, Context ctx) {
@@ -931,6 +949,22 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
+        private void pickNetSpeedMode() {
+            final CharSequence[] options = {
+                    getString(R.string.sb_net_mode_total),
+                    getString(R.string.sb_net_mode_both),
+                    getString(R.string.sb_net_mode_down)
+            };
+            int cur = Math.max(0, Math.min(2, prefs().getInt(KEY_SB_NET_SPEED_MODE, 0)));
+            OneUiDialog.showSingleChoice(host(), getString(R.string.sb_row_net_speed_mode), options, cur, idx -> {
+                prefs().edit().putInt(KEY_SB_NET_SPEED_MODE, idx).apply();
+                host().mirrorIntToGlobal(KEY_SB_NET_SPEED_MODE, idx);
+                host().updatePermissions();
+                syncStatusBarSummaries();
+                toast(getString(R.string.toast_saved));
+            });
+        }
+
         private void syncStatusBarSummaries() {
             if (getActivity() == null) return;
             if (mSbEdgeSpaceRow != null) {
@@ -978,6 +1012,12 @@ public class MainActivity extends AppCompatActivity {
                         ? getString(R.string.sb_hidden_none)
                         : getString(R.string.sb_hidden_count, count));
             }
+            if (mSbNetSpeedModeRow != null) {
+                int mode = prefs().getInt(KEY_SB_NET_SPEED_MODE, 0);
+                int res = mode == 1 ? R.string.sb_net_mode_both
+                        : (mode == 2 ? R.string.sb_net_mode_down : R.string.sb_net_mode_total);
+                mSbNetSpeedModeRow.setSummary(res);
+            }
         }
 
         private void syncVibrateStrengthSummary() {
@@ -992,10 +1032,13 @@ public class MainActivity extends AppCompatActivity {
             boolean timeoutOn = prefs().getBoolean(KEY_DISPLAY_SCREEN_TIMEOUT, true);
             boolean actionOn = prefs().getBoolean(KEY_DISPLAY_ACTION_TIMEOUT, true);
             boolean vibOn = prefs().getBoolean(KEY_SB_TAP_VIBRATE, true);
+            boolean netSpeedOn = prefs().getBoolean(KEY_SB_NET_SPEED, false);
             if (mScreenModeRow != null) mScreenModeRow.setEnabled(modeOn);
             if (mScreenTimeoutRow != null) mScreenTimeoutRow.setEnabled(timeoutOn);
             if (mActionTimeoutRow != null) mActionTimeoutRow.setEnabled(actionOn);
             if (mSbVibrateStrengthRow != null) mSbVibrateStrengthRow.setEnabled(vibOn);
+            if (mSbNetSpeedModeRow != null) mSbNetSpeedModeRow.setEnabled(netSpeedOn);
+            if (mSbNetSpeedAutoHideSwitch != null) mSbNetSpeedAutoHideSwitch.setEnabled(netSpeedOn);
         }
 
         // ---------------------------------------------------------- display pickers

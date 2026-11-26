@@ -195,6 +195,14 @@
     <string name="desc_sb_back_btn">Adds a compact Back chevron (&lt;) at the left edge of the status bar.</string>
     <string name="title_sb_burn_in">Protect against screen burn-in</string>
     <string name="desc_sb_burn_in">Periodically shifts status bar items by a few pixels (Samsung pixel-shift).</string>
+    <string name="title_sb_net_speed">Network speed meter</string>
+    <string name="desc_sb_net_speed">Shows live internet download/upload speed in the status bar.</string>
+    <string name="sb_row_net_speed_mode">Network speed display</string>
+    <string name="sb_net_mode_total">Total speed (e.g. 2.4 MB/s)</string>
+    <string name="sb_net_mode_both">Download &amp; upload (2 lines)</string>
+    <string name="sb_net_mode_down">Download only</string>
+    <string name="title_sb_net_speed_auto_hide">Hide when inactive</string>
+    <string name="desc_sb_net_speed_auto_hide">Hides the speed indicator when traffic is below 1 KB/s.</string>
 
     <!-- Status Bar Taps & Feedback -->
     <string name="sec_sb_taps">Status Bar Taps &amp; Feedback</string>

@@ -2,6 +2,12 @@
 
 All notable changes to **S23 Ultra Enhancements** are documented in this file.
 
+## [2.5] - 2026-11-26
+
+### Added
+- **Status Bar → Network speed meter** (`pref_sb_net_speed`): live download/upload speed indicator in the status bar with 3 display styles (`Total speed`, `Download & upload (2 lines)`, `Download only`), tabular digits (`tnum`), automatic clock tint matching, and **Hide when inactive** (`pref_sb_net_speed_auto_hide`, < 1 KB/s), pausing automatically while the screen is off.
+- **New One UI 9 Adaptive App Icon** (`mipmap-anydpi-v26/ic_launcher` + `ic_launcher_round`) with a sapphire-to-azure gradient background, One UI sliders + Galaxy sparkle foreground, and `<monochrome>` layer for One UI Color Palette themed icons.
+
 ## [2.4] - 2026-11-26
 
 ### Added

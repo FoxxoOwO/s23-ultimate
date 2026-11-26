@@ -9,6 +9,7 @@ import android.database.ContentObserver;
 import android.graphics.Color;
 import android.graphics.Rect;
 import android.graphics.Typeface;
+import android.net.TrafficStats;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.PowerManager;
@@ -34,6 +35,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.WeakHashMap;
 
 import io.github.libxposed.api.XposedInterface;
@@ -66,6 +68,9 @@ final class SystemUiHooks {
     private static final String PREF_SB_ONE_CONN_ICON = "pref_sb_one_connection_icon";
     private static final String PREF_SB_BACK_BUTTON = "pref_sb_back_button";
     private static final String PREF_SB_BURN_IN = "pref_sb_burn_in_protect";
+    private static final String PREF_SB_NET_SPEED = "pref_sb_net_speed";
+    private static final String PREF_SB_NET_SPEED_MODE = "pref_sb_net_speed_mode";
+    private static final String PREF_SB_NET_SPEED_AUTO_HIDE = "pref_sb_net_speed_auto_hide";
 
     // Taps & feedback prefs
     private static final String PREF_SB_TAP_VIBRATE = "pref_sb_tap_vibrate";
@@ -75,6 +80,7 @@ final class SystemUiHooks {
     private static final String PREF_SB_LONG_PREFIX = "pref_sb_long_";
 
     private static final String TAG_BACK_BTN = "s23_sb_back_btn";
+    private static final String TAG_NET_SPEED = "s23_sb_net_speed";
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
 
     private static volatile boolean sInstalled;
@@ -101,6 +107,13 @@ final class SystemUiHooks {
     private static final List<WeakReference<TextView>> sClockCandidates = new ArrayList<>();
     private static long sLastClockCheck;
     private static TextView sBackBtn;
+    private static TextView sNetSpeedView;
+    private static int sNetSpeedLastMode = -1;
+    private static Runnable sNetSpeedTick;
+    private static boolean sNetSpeedRunning;
+    private static long sLastNetRx = -1L;
+    private static long sLastNetTx = -1L;
+    private static long sLastNetTimeMs;
     private static ViewTreeObserver sObserver;
     private static ViewTreeObserver.OnPreDrawListener sPreDraw;
 
@@ -486,7 +499,7 @@ final class SystemUiHooks {
         if (tv == null) return;
         if (!sInitDone) initOnce(tv.getContext());
         if (sClockId == 0 || tv.getId() != sClockId) return;
-        if (TAG_BACK_BTN.equals(tv.getTag())) return;
+        if (TAG_BACK_BTN.equals(tv.getTag()) || TAG_NET_SPEED.equals(tv.getTag())) return;
         if (!tv.getClass().getName().contains("Clock")) return;
         if (!(tv.getParent() instanceof LinearLayout)) return;
         for (int i = sClockCandidates.size() - 1; i >= 0; i--) {
@@ -503,7 +516,7 @@ final class SystemUiHooks {
         if (tv == null) return;
         if (!sInitDone) initOnce(tv.getContext());
         if (sClockId == 0 || tv.getId() != sClockId) return;
-        if (TAG_BACK_BTN.equals(tv.getTag())) return;
+        if (TAG_BACK_BTN.equals(tv.getTag()) || TAG_NET_SPEED.equals(tv.getTag())) return;
         if (!tv.isShown() || !(tv.getParent() instanceof LinearLayout)) return;
 
         TextView cur = sClockRef.get();
@@ -576,6 +589,7 @@ final class SystemUiHooks {
         applyOneConnectionIcon(mod, root);
         syncNotifIconsMax(mod, root);
         syncBackButton(mod, clock);
+        syncNetSpeed(mod, root, clock);
     }
 
     private static void applyMaxIconsToContainer(HookEntry module, Object container) {
@@ -789,6 +803,202 @@ final class SystemUiHooks {
         if (sBackBtn.getCurrentTextColor() != color) {
             sBackBtn.setTextColor(color);
         }
+    }
+
+    // ------------------------------------------------------------------ Network Speed Meter
+
+    private static void syncNetSpeed(HookEntry mod, View root, TextView clock) {
+        boolean want = mod.isPref(PREF_SB_NET_SPEED, false);
+        LinearLayout parent = null;
+        boolean inSystemIcons = false;
+        View si = sSystemIconsId != 0 ? root.findViewById(sSystemIconsId) : null;
+        if (si instanceof LinearLayout) {
+            parent = (LinearLayout) si;
+            inSystemIcons = true;
+        } else if (clock.getParent() instanceof LinearLayout) {
+            parent = (LinearLayout) clock.getParent();
+        }
+        if (parent == null) return;
+
+        if (sNetSpeedView != null && sNetSpeedView.getParent() != parent) {
+            if (sNetSpeedView.getParent() instanceof ViewGroup) {
+                ((ViewGroup) sNetSpeedView.getParent()).removeView(sNetSpeedView);
+            }
+            sNetSpeedView = null;
+            sNetSpeedLastMode = -1;
+        }
+
+        if (!want) {
+            stopNetSpeedLoop();
+            if (sNetSpeedView != null && sNetSpeedView.getVisibility() != View.GONE) {
+                sNetSpeedView.setVisibility(View.GONE);
+            }
+            return;
+        }
+
+        if (sNetSpeedView == null) {
+            Context ctx = clock.getContext();
+            TextView tv = new TextView(ctx);
+            tv.setTag(TAG_NET_SPEED);
+            tv.setIncludeFontPadding(false);
+            tv.setFontFeatureSettings("tnum");
+            tv.setTypeface(clock.getTypeface());
+            tv.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
+            float d = ctx.getResources().getDisplayMetrics().density;
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT);
+            lp.gravity = Gravity.CENTER_VERTICAL;
+            lp.setMarginStart(Math.round(4 * d));
+            lp.setMarginEnd(Math.round(4 * d));
+            int insertIdx = 0;
+            if (!inSystemIcons) {
+                int clkIdx = parent.indexOfChild(clock);
+                insertIdx = clkIdx >= 0 ? clkIdx + 1 : parent.getChildCount();
+            }
+            parent.addView(tv, insertIdx, lp);
+            sNetSpeedView = tv;
+            sNetSpeedLastMode = -1;
+        }
+
+        int color = clock.getCurrentTextColor();
+        if (sNetSpeedView.getCurrentTextColor() != color) {
+            sNetSpeedView.setTextColor(color);
+        }
+
+        int mode = mod.getIntPref(PREF_SB_NET_SPEED_MODE, 0);
+        if (mode != sNetSpeedLastMode) {
+            if (mode == 1) {
+                sNetSpeedView.setSingleLine(false);
+                sNetSpeedView.setMaxLines(2);
+                sNetSpeedView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 7.5f);
+                sNetSpeedView.setLineSpacing(0f, 0.85f);
+            } else {
+                sNetSpeedView.setSingleLine(true);
+                sNetSpeedView.setMaxLines(1);
+                sNetSpeedView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f);
+                sNetSpeedView.setLineSpacing(0f, 1.0f);
+            }
+            sNetSpeedLastMode = mode;
+        }
+
+        startNetSpeedLoop();
+    }
+
+    private static void startNetSpeedLoop() {
+        if (sNetSpeedRunning) return;
+        sNetSpeedRunning = true;
+        if (sNetSpeedTick == null) {
+            sNetSpeedTick = new Runnable() {
+                @Override
+                public void run() {
+                    if (!sNetSpeedRunning) return;
+                    long delay = updateNetSpeedOnce();
+                    if (sNetSpeedRunning) {
+                        MAIN.postDelayed(this, delay);
+                    }
+                }
+            };
+        }
+        MAIN.removeCallbacks(sNetSpeedTick);
+        MAIN.post(sNetSpeedTick);
+    }
+
+    private static void stopNetSpeedLoop() {
+        sNetSpeedRunning = false;
+        if (sNetSpeedTick != null) {
+            MAIN.removeCallbacks(sNetSpeedTick);
+        }
+        sLastNetRx = -1L;
+        sLastNetTx = -1L;
+        sLastNetTimeMs = 0L;
+    }
+
+    private static long updateNetSpeedOnce() {
+        HookEntry mod = sModule;
+        TextView tv = sNetSpeedView;
+        if (mod == null || !mod.isPref(PREF_SB_NET_SPEED, false)) {
+            stopNetSpeedLoop();
+            if (tv != null && tv.getVisibility() != View.GONE) {
+                tv.setVisibility(View.GONE);
+            }
+            return 1000L;
+        }
+        if (!isInteractive()) {
+            sLastNetRx = -1L;
+            sLastNetTx = -1L;
+            sLastNetTimeMs = 0L;
+            return 3000L;
+        }
+        if (tv == null || !tv.isAttachedToWindow()) {
+            return 1000L;
+        }
+
+        long rx = TrafficStats.getTotalRxBytes();
+        long tx = TrafficStats.getTotalTxBytes();
+        long now = SystemClock.elapsedRealtime();
+
+        if (rx < 0 || tx < 0 || sLastNetRx < 0 || sLastNetTx < 0 || now <= sLastNetTimeMs) {
+            sLastNetRx = rx;
+            sLastNetTx = tx;
+            sLastNetTimeMs = now;
+            if (mod.isPref(PREF_SB_NET_SPEED_AUTO_HIDE, true)) {
+                if (tv.getVisibility() != View.GONE) tv.setVisibility(View.GONE);
+            } else {
+                int mode = mod.getIntPref(PREF_SB_NET_SPEED_MODE, 0);
+                tv.setText(mode == 1 ? "\u21930B\n\u21910B" : "0 B/s");
+                if (tv.getVisibility() != View.VISIBLE) tv.setVisibility(View.VISIBLE);
+            }
+            return 1000L;
+        }
+
+        long dt = now - sLastNetTimeMs;
+        long rxBps = Math.max(0L, (rx - sLastNetRx) * 1000L / dt);
+        long txBps = Math.max(0L, (tx - sLastNetTx) * 1000L / dt);
+        sLastNetRx = rx;
+        sLastNetTx = tx;
+        sLastNetTimeMs = now;
+
+        int mode = mod.getIntPref(PREF_SB_NET_SPEED_MODE, 0);
+        boolean autoHide = mod.isPref(PREF_SB_NET_SPEED_AUTO_HIDE, true);
+        long activeBps = (mode == 2) ? rxBps : (rxBps + txBps);
+
+        if (autoHide && activeBps < 1024L) {
+            if (tv.getVisibility() != View.GONE) tv.setVisibility(View.GONE);
+        } else {
+            String text;
+            if (mode == 1) {
+                text = "\u2193" + formatSpeed(rxBps, true) + "\n\u2191" + formatSpeed(txBps, true);
+            } else if (mode == 2) {
+                text = formatSpeed(rxBps, false);
+            } else {
+                text = formatSpeed(rxBps + txBps, false);
+            }
+            if (!text.contentEquals(tv.getText())) {
+                tv.setText(text);
+            }
+            if (tv.getVisibility() != View.VISIBLE) {
+                tv.setVisibility(View.VISIBLE);
+            }
+        }
+        return 1000L;
+    }
+
+    private static String formatSpeed(long bps, boolean compact) {
+        if (bps < 1024L) {
+            return compact ? (bps + "B") : (bps + " B/s");
+        }
+        double kb = bps / 1024.0;
+        if (kb < 1000.0) {
+            String num = kb < 100.0
+                    ? String.format(Locale.US, "%.1f", kb)
+                    : String.format(Locale.US, "%.0f", kb);
+            return compact ? (num + "K") : (num + " KB/s");
+        }
+        double mb = kb / 1024.0;
+        String num = mb < 100.0
+                ? String.format(Locale.US, "%.1f", mb)
+                : String.format(Locale.US, "%.0f", mb);
+        return compact ? (num + "M") : (num + " MB/s");
     }
 
     // ------------------------------------------------------------------ Burn-in Shift Loop
