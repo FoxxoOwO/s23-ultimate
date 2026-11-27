@@ -12,5 +12,6 @@
         <item>com.android.phone</item>
         <item>com.samsung.android.app.aodservice</item>
         <item>com.samsung.android.app.dressroom</item>
+        <item>com.sec.android.app.launcher</item>
     </string-array>
 </resources>

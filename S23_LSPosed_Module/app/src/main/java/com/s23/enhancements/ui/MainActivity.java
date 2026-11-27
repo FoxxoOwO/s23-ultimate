@@ -73,6 +73,13 @@ public class MainActivity extends AppCompatActivity {
 
     // Lock screen
     public static final String KEY_LOCKSCREEN_WIDGET_ROWS = "pref_lockscreen_widget_rows";
+    public static final String KEY_LOCKSCREEN_CHARGING_INFO = "pref_lockscreen_charging_info";
+
+    // Recents
+    public static final String KEY_RECENTS_FORCE_STOP = "pref_recents_force_stop";
+    public static final String KEY_RECENTS_RESTART = "pref_recents_restart";
+    public static final String KEY_RECENTS_CLEAR_CACHE = "pref_recents_clear_cache";
+    public static final String KEY_RECENTS_SCREENSHOT = "pref_recents_screenshot";
 
     // Status bar
     public static final String KEY_SB_EDGE_MODE = "pref_sb_edge_space_mode";
@@ -154,6 +161,8 @@ public class MainActivity extends AppCompatActivity {
             KEY_CAMERA_SHUTTER_MUTE,
             KEY_DISPLAY_OUTDOOR, KEY_DISPLAY_SCREEN_MODE, KEY_DISPLAY_SCREEN_TIMEOUT,
             KEY_DISPLAY_ACTION_TIMEOUT, KEY_DISPLAY_EAD, KEY_DISPLAY_FONTS,
+            KEY_LOCKSCREEN_CHARGING_INFO,
+            KEY_RECENTS_FORCE_STOP, KEY_RECENTS_RESTART, KEY_RECENTS_CLEAR_CACHE, KEY_RECENTS_SCREENSHOT,
             KEY_SYSTEM_CALL_RECORDING, KEY_SYSTEM_WIFI_PASSWORDS,
             KEY_SYSTEM_FLAG_SECURE, KEY_SYSTEM_TELEMETRY,
             KEY_BATTERY_INFO,
@@ -339,6 +348,7 @@ public class MainActivity extends AppCompatActivity {
             addCameraSection(screen, ctx);
             addDisplaySection(screen, ctx);
             addLockScreenSection(screen, ctx);
+            addRecentsSection(screen, ctx);
             addStatusBarSection(screen, ctx);
             addStatusBarTapsSection(screen, ctx);
             addNotificationsSection(screen, ctx);
@@ -526,6 +536,20 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             });
             syncLockScreenSummary();
+            switchPref(cat, ctx, KEY_LOCKSCREEN_CHARGING_INFO, R.string.title_ls_charging_info,
+                    R.string.desc_ls_charging_info, true);
+        }
+
+        private void addRecentsSection(PreferenceScreen screen, Context ctx) {
+            PreferenceCategory cat = category(screen, ctx, R.string.sec_recents);
+            switchPref(cat, ctx, KEY_RECENTS_FORCE_STOP, R.string.title_recents_force_stop,
+                    R.string.desc_recents_force_stop, true);
+            switchPref(cat, ctx, KEY_RECENTS_RESTART, R.string.title_recents_restart,
+                    R.string.desc_recents_restart, true);
+            switchPref(cat, ctx, KEY_RECENTS_CLEAR_CACHE, R.string.title_recents_clear_cache,
+                    R.string.desc_recents_clear_cache, true);
+            switchPref(cat, ctx, KEY_RECENTS_SCREENSHOT, R.string.title_recents_screenshot,
+                    R.string.desc_recents_screenshot, true);
         }
 
         private void pickLockscreenWidgetRows() {

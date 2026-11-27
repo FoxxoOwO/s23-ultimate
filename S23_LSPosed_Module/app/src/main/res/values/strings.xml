@@ -143,6 +143,19 @@
     <string name="ls_rows_default">Samsung’s default (1 row / 4 slots)</string>
     <string name="ls_rows_2">2 rows (up to 8 widgets)</string>
     <string name="ls_rows_3">3 rows (up to 12 widgets)</string>
+    <string name="title_ls_charging_info">Charging details</string>
+    <string name="desc_ls_charging_info">Shows live wattage, current, voltage, and temperature on the lock screen and AOD while charging.</string>
+
+    <!-- Recents -->
+    <string name="sec_recents">Recents</string>
+    <string name="title_recents_force_stop">Force stop</string>
+    <string name="desc_recents_force_stop">Adds Force stop to the Recents task menu without removing the card.</string>
+    <string name="title_recents_restart">Restart</string>
+    <string name="desc_recents_restart">Adds Restart to force-stop and relaunch the app fresh.</string>
+    <string name="title_recents_clear_cache">Clear cache</string>
+    <string name="desc_recents_clear_cache">Adds Clear cache to wipe only the app’s cache files.</string>
+    <string name="title_recents_screenshot">Screenshot</string>
+    <string name="desc_recents_screenshot">Adds Screenshot to save a clean task snapshot to Pictures/Screenshots.</string>
 
     <!-- Status Bar -->
     <string name="sec_statusbar">Status Bar</string>

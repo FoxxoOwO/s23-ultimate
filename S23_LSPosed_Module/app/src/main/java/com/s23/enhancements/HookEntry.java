@@ -234,9 +234,13 @@ public class HookEntry extends XposedModule {
                 } else {
                     Log.i(TAG, "Skipping SystemUI hooks in secondary process: " + mProcessName);
                 }
-            } else if ("com.samsung.android.app.aodservice".equals(pkg) ||
-                       "com.samsung.android.app.dressroom".equals(pkg)) {
+            } else if ("com.samsung.android.app.aodservice".equals(pkg)) {
                 hookLockscreenWidgets(cl, pkg);
+                ChargingInfoHooks.installInAod(this, cl);
+            } else if ("com.samsung.android.app.dressroom".equals(pkg)) {
+                hookLockscreenWidgets(cl, pkg);
+            } else if ("com.sec.android.app.launcher".equals(pkg)) {
+                RecentsMenuHooks.install(this, cl, pkg);
             }
         } catch (Throwable t) {
             Log.e(TAG, "Error in onPackageReady for " + pkg, t);
@@ -1299,6 +1303,7 @@ public class HookEntry extends XposedModule {
         }
 
         SystemUiHooks.install(this, cl);
+        ChargingInfoHooks.installInSystemUI(this, cl);
         hookLockscreenWidgets(cl, "com.android.systemui");
     }
 

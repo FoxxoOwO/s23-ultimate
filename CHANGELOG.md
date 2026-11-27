@@ -2,6 +2,17 @@
 
 All notable changes to **S23 Ultra Enhancements** are documented in this file.
 
+## [2.6] - 2026-11-27
+
+### Added
+- **Lock Screen & AOD → Charging details** ([ChargingInfoHooks](S23_LSPosed_Module/app/src/main/java/com/s23/enhancements/ChargingInfoHooks.java)):
+  - Displays live charging telemetry (`W · mA · V · °C`) directly below One UI's charging percentage and time-to-full line on both the lock screen (`KeyguardIndicationController`) and Always-On Display (`PluginAODManager` / `ChargingInfoView`).
+  - Uses Samsung's `current_now` / `current_avg` extras and the S23 Ultra `> 20,000` µA/mA scaling threshold with a live periodic refresh (`2.5 s` interactive / `5 s` AOD) and tabular digits (`tnum`).
+- **Recents Task Menu Toolkit** ([RecentsMenuHooks](S23_LSPosed_Module/app/src/main/java/com/s23/enhancements/RecentsMenuHooks.java)):
+  - Adds **Force stop**, **Restart**, **Clear cache**, and **Screenshot** directly below **App info** in the One UI Home Recents task popup menu, each individually toggleable under the new **Recents** section in the app (`pref_recents_force_stop`, `pref_recents_restart`, `pref_recents_clear_cache`, `pref_recents_screenshot`).
+  - Captures targets via `View#performClick()` + `TaskIconView` without leaking popup `WeakReference`s, clears strictly cache directories on **Clear cache**, and saves clean task snapshots atomically to `Pictures/Screenshots` via `MediaStore` `IS_PENDING` (with split-screen `taskId` matching and `PixelCopy` fallback).
+  - Added `com.sec.android.app.launcher` to `scope.list` and `xposed_scope`.
+
 ## [2.5] - 2026-11-26
 
 ### Added
