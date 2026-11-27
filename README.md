@@ -1,5 +1,7 @@
 # S23 Enhancer (LSPosed)
 
+Also check out [Galaxy AI Offline Speech-to-Text & Diarization Module](https://github.com/FoxxoOwO/galaxyai-offline-stt/blob/main/README.md)
+
 LSPosed module + companion app built with native **SESL9 (Samsung One UI 9)** components for the **Galaxy S23 Ultra** (SM-S918B, One UI 9 / Android 16–17).
 
 The module unlocks features that Samsung has software-locked on the S23 and adds SystemUI / Status Bar customizations. Each feature can be individually toggled or configured inside the companion app without requiring a device reboot.
