@@ -8,6 +8,21 @@ The module unlocks features that Samsung has software-locked on the S23 and adds
 
 > **Do NOT reboot the device** if you are using tethered root (KernelSU / volatile jailbreak) — rebooting will result in losing root access. After toggling a setting, either `force-stop` the target app or tap **Restart SystemUI** directly in the app.
 
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center"><img src="screenshots/01-battery.jpg" width="260" alt="Live Battery Card" /><br /><sub>Live Battery card</sub></td>
+    <td align="center"><img src="screenshots/02-camera-display.jpg" width="260" alt="Camera and Display" /><br /><sub>Camera &amp; Display tweaks</sub></td>
+    <td align="center"><img src="screenshots/03-lockscreen-recents-statusbar.jpg" width="260" alt="Lock Screen, Recents and Status Bar" /><br /><sub>Lock Screen, Recents &amp; Status Bar</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="screenshots/04-notifications-system.jpg" width="260" alt="Notifications and System" /><br /><sub>Notifications, System &amp; Updates</sub></td>
+    <td align="center"><img src="screenshots/05-lockscreen-charging.jpg" width="260" alt="Lock Screen Widgets and Charging Details" /><br /><sub>Lock Screen widgets &amp; charging details</sub></td>
+    <td align="center"><img src="screenshots/06-recents-menu.jpg" width="260" alt="Recents Task Menu" /><br /><sub>Recents task menu actions</sub></td>
+  </tr>
+</table>
+
 ## Features
 
 | Area | Features & Preference Keys |
@@ -78,4 +93,4 @@ The APK is signed with `debug.keystore` (password: `android`, alias: `debug`). F
 
 ## License
 
-Unlicensed — personal project. If you wish to use parts of the code, feel free to open an issue.
+Licensed under the [GNU General Public License v3.0](LICENSE) (GPL-3.0).

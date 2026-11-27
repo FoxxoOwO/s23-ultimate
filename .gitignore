@@ -47,6 +47,9 @@ services.jar
 # Frames, screenshots and device dumps from reverse engineering
 *.png
 *.jpg
+!screenshots/
+!screenshots/*.jpg
+!screenshots/*.png
 *.xml
 !S23_LSPosed_Module/app/src/main/**/*.xml
 !S23_LSPosed_Module/app/src/main/res/**/*.xml
