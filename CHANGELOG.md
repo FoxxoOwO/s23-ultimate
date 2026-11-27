@@ -1,6 +1,18 @@
 # Changelog
 
-All notable changes to **S23 Ultra Enhancements** are documented in this file.
+All notable changes to **S23 Enhancer** are documented in this file.
+
+## [2.7] - 2026-11-27
+
+### Added
+- **Settings → App info package & install date** (`pref_system_app_info_details`, [HookEntry#hookAppInfoDetails](S23_LSPosed_Module/app/src/main/java/com/s23/enhancements/HookEntry.java)):
+  - Injects **Package name** (tap to copy to clipboard) and **Install date** (plus **Updated** timestamp when updated more than 1 minute after initial install) directly below **App version** in `Settings > Apps > App info` (`AppVersionPreferenceController#updateState`).
+- **Full Czech (`cs`) localization**:
+  - Added [values-cs/strings.xml](S23_LSPosed_Module/app/src/main/res/values-cs/strings.xml) translating all 256 companion app, Quick Settings tile, dialog, live Battery card, status bar action, and updater strings.
+  - Localized Recents task menu items (`Force stop`, `Restart`, `Clear cache`, `Screenshot`) and all Recents Toast notifications in [RecentsMenuHooks](S23_LSPosed_Module/app/src/main/java/com/s23/enhancements/RecentsMenuHooks.java), and unified `HookEntry.isCzech(Context)` checks across Settings, Launcher, and SystemUI hooks (English remains the default for all other system locales).
+
+### Changed
+- Added a screenshots gallery to `README.md` and licensed the repository under GNU GPL v3.0.
 
 ## [2.6] - 2026-11-27
 

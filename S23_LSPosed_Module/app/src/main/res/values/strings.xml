@@ -47,6 +47,8 @@
     <string name="desc_flag_secure">Allows screenshots and screen recordings in apps protected by FLAG_SECURE.</string>
     <string name="title_telemetry">Disable Telemetry</string>
     <string name="desc_telemetry">Stops crash log uploads and system diagnostic reporting.</string>
+    <string name="title_app_info_details">App info package &amp; install date</string>
+    <string name="desc_app_info_details">Shows package name (tap to copy) and install/update date in Settings &gt; Apps &gt; App info.</string>
 
     <!-- Battery -->
     <string name="sec_battery">Battery</string>

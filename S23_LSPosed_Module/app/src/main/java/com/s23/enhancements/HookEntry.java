@@ -45,6 +45,9 @@ public class HookEntry extends XposedModule {
     /** Battery info: unlock the EU-regulatory rows (health, cycles, dates) in Settings. */
     private static final String PREF_BATTERY_INFO = "pref_system_battery_info";
 
+    /** Settings App Info: inject Package name (tap to copy) and Install/Update date rows. */
+    private static final String PREF_APP_INFO_DETAILS = "pref_system_app_info_details";
+
     /** Lock screen: max ComplicationWidget grid rows (0 = Samsung default 1 row, 2-3 = expanded). */
     private static final String PREF_LOCKSCREEN_WIDGET_ROWS = "pref_lockscreen_widget_rows";
     private static final String COMPLICATION_SIZE_MANAGER_CLASS =
@@ -965,18 +968,7 @@ public class HookEntry extends XposedModule {
                 try {
                     int type = ((Number) chain.getArg(2)).intValue();
                     Context ctx = (Context) chain.getArg(0);
-                    boolean isCs = false;
-                    if (ctx != null) {
-                        try {
-                            Locale loc = ctx.getResources().getConfiguration().getLocales().get(0);
-                            if (loc != null && "cs".equalsIgnoreCase(loc.getLanguage())) {
-                                isCs = true;
-                            }
-                        } catch (Throwable ignored) {}
-                    }
-                    if (!isCs && "cs".equalsIgnoreCase(Locale.getDefault().getLanguage())) {
-                        isCs = true;
-                    }
+                    boolean isCs = isCzech(ctx);
 
                     List<CharSequence> list = new ArrayList<>(Arrays.asList(original));
 
@@ -1020,7 +1012,7 @@ public class HookEntry extends XposedModule {
                 try {
                     long timeout = ((Number) chain.getArg(0)).longValue();
                     if (timeout >= 2147483640L || timeout < 0) {
-                        boolean isCs = "cs".equalsIgnoreCase(Locale.getDefault().getLanguage());
+                        boolean isCs = isCzech(null);
                         return isCs ? "Nikdy" : "Never";
                     }
                 } catch (Throwable ignored) {}
@@ -1184,6 +1176,204 @@ public class HookEntry extends XposedModule {
             });
             Log.i(TAG, "Hooked WifiDetailPreferenceController (password reveal)");
         } catch (Throwable ignored) {}
+
+        hookAppInfoDetails(cl);
+    }
+
+    /**
+     * Settings App Info: injects Package name (tap to copy) and Install/Update date rows
+     * right below App version in AppInfoDashboardFragment.
+     */
+    private void hookAppInfoDetails(ClassLoader cl) {
+        try {
+            Class<?> verCls = cl.loadClass("com.android.settings.applications.appinfo.AppVersionPreferenceController");
+            hookAllMethods(verCls, "updateState", chain -> {
+                Object res = chain.proceed();
+                Object self = chain.getThisObject();
+                Object pref = chain.getArgs().isEmpty() ? null : chain.getArg(0);
+                if (self == null || pref == null) return res;
+
+                try {
+                    Object parentFrag = getFieldValue(self, "mParent");
+                    Object pkgInfoObj = getFieldValue(parentFrag, "mPackageInfo");
+                    Object parentGroup = invokeMethod(pref, "getParent");
+                    Object ctxObj = invokeMethod(pref, "getContext");
+                    if (parentGroup == null || !(ctxObj instanceof Context)) return res;
+
+                    Context ctx = (Context) ctxObj;
+                    Method findPref = parentGroup.getClass().getMethod("findPreference", CharSequence.class);
+                    Object pkgPref = findPref.invoke(parentGroup, "s23_appinfo_package_name");
+                    Object datePref = findPref.invoke(parentGroup, "s23_appinfo_install_date");
+
+                    if (!isPref(PREF_APP_INFO_DETAILS, true)
+                            || !(pkgInfoObj instanceof android.content.pm.PackageInfo)) {
+                        setPrefVisible(pkgPref, false);
+                        setPrefVisible(datePref, false);
+                        return res;
+                    }
+
+                    android.content.pm.PackageInfo pkgInfo = (android.content.pm.PackageInfo) pkgInfoObj;
+                    String pkgName = pkgInfo.packageName;
+                    if (pkgName == null || pkgName.isEmpty()) return res;
+
+                    int baseOrder = 0;
+                    Object ordObj = invokeMethod(pref, "getOrder");
+                    if (ordObj instanceof Integer) baseOrder = (Integer) ordObj;
+                    boolean isCs = isCzech(ctx);
+
+                    Method addPref = parentGroup.getClass().getMethod("addPreference", cl.loadClass("androidx.preference.Preference"));
+
+                    if (pkgPref == null) {
+                        pkgPref = newSettingsPreference(cl, pref, ctx);
+                        if (pkgPref != null) {
+                            invokeArg(pkgPref, "setKey", String.class, "s23_appinfo_package_name");
+                            invokeArg(pkgPref, "setPersistent", boolean.class, false);
+                            invokeArg(pkgPref, "setIconSpaceReserved", boolean.class, false);
+                            invokeArg(pkgPref, "setOrder", int.class, baseOrder + 1);
+                            invokeArg(pkgPref, "setSelectable", boolean.class, true);
+                            addPref.invoke(parentGroup, pkgPref);
+                        }
+                    }
+                    if (pkgPref != null) {
+                        invokeArg(pkgPref, "setTitle", CharSequence.class,
+                                isCs ? "N\u00E1zev bal\u00ED\u010Dku" : "Package name");
+                        invokeArg(pkgPref, "setSummary", CharSequence.class, pkgName);
+                        setPrefVisible(pkgPref, true);
+
+                        try {
+                            Class<?> listenerCls = cl.loadClass("androidx.preference.Preference$OnPreferenceClickListener");
+                            Object proxy = java.lang.reflect.Proxy.newProxyInstance(
+                                    cl,
+                                    new Class<?>[]{listenerCls},
+                                    (pObj, method, args) -> {
+                                        if ("onPreferenceClick".equals(method.getName())) {
+                                            try {
+                                                android.content.ClipboardManager cm =
+                                                        (android.content.ClipboardManager) ctx.getSystemService(Context.CLIPBOARD_SERVICE);
+                                                if (cm != null) {
+                                                    cm.setPrimaryClip(android.content.ClipData.newPlainText("package", pkgName));
+                                                    android.widget.Toast.makeText(
+                                                            ctx,
+                                                            isCs ? "N\u00E1zev bal\u00ED\u010Dku zkop\u00EDrov\u00E1n" : "Package name copied",
+                                                            android.widget.Toast.LENGTH_SHORT).show();
+                                                }
+                                            } catch (Throwable ignored) {
+                                            }
+                                            return Boolean.TRUE;
+                                        }
+                                        return null;
+                                    });
+                            pkgPref.getClass().getMethod("setOnPreferenceClickListener", listenerCls)
+                                    .invoke(pkgPref, proxy);
+                        } catch (Throwable ignored) {
+                        }
+                    }
+
+                    if (datePref == null) {
+                        datePref = newSettingsPreference(cl, pref, ctx);
+                        if (datePref != null) {
+                            invokeArg(datePref, "setKey", String.class, "s23_appinfo_install_date");
+                            invokeArg(datePref, "setPersistent", boolean.class, false);
+                            invokeArg(datePref, "setIconSpaceReserved", boolean.class, false);
+                            invokeArg(datePref, "setOrder", int.class, baseOrder + 2);
+                            invokeArg(datePref, "setSelectable", boolean.class, false);
+                            addPref.invoke(parentGroup, datePref);
+                        }
+                    }
+                    if (datePref != null) {
+                        String installStr = formatAppTimestamp(ctx, pkgInfo.firstInstallTime);
+                        StringBuilder summary = new StringBuilder(installStr);
+                        if (pkgInfo.lastUpdateTime > pkgInfo.firstInstallTime + 60_000L) {
+                            summary.append('\n')
+                                   .append(isCs ? "Aktualizov\u00E1no: " : "Updated: ")
+                                   .append(formatAppTimestamp(ctx, pkgInfo.lastUpdateTime));
+                        }
+                        invokeArg(datePref, "setTitle", CharSequence.class,
+                                isCs ? "Datum instalace" : "Install date");
+                        invokeArg(datePref, "setSummary", CharSequence.class, summary.toString());
+                        setPrefVisible(datePref, true);
+                    }
+                    Log.i(TAG, "Injected App Info details for " + pkgName);
+                } catch (Throwable t) {
+                    Log.w(TAG, "AppInfo details inject failed: " + t.getMessage());
+                }
+                return res;
+            });
+            Log.i(TAG, "Hooked AppVersionPreferenceController for App Info details");
+        } catch (Throwable t) {
+            Log.w(TAG, "Failed to hook AppVersionPreferenceController: " + t.getMessage());
+        }
+    }
+
+    private static Object newSettingsPreference(ClassLoader cl, Object template, Context ctx) {
+        try {
+            return cl.loadClass("androidx.preference.Preference")
+                    .getConstructor(Context.class).newInstance(ctx);
+        } catch (Throwable ignored) {
+        }
+        try {
+            return template.getClass().getConstructor(Context.class).newInstance(ctx);
+        } catch (Throwable ignored) {
+        }
+        return null;
+    }
+
+    private static String formatAppTimestamp(Context ctx, long timeMs) {
+        if (timeMs <= 0L) return "-";
+        java.util.Date d = new java.util.Date(timeMs);
+        return android.text.format.DateFormat.getMediumDateFormat(ctx).format(d)
+                + " " + android.text.format.DateFormat.getTimeFormat(ctx).format(d);
+    }
+
+    static boolean isCzech(Context ctx) {
+        if (ctx != null) {
+            try {
+                Locale loc = ctx.getResources().getConfiguration().getLocales().get(0);
+                if (loc != null) {
+                    return "cs".equalsIgnoreCase(loc.getLanguage());
+                }
+            } catch (Throwable ignored) {
+            }
+        }
+        return "cs".equalsIgnoreCase(Locale.getDefault().getLanguage());
+    }
+
+    private static Object getFieldValue(Object target, String name) {
+        if (target == null) return null;
+        for (Class<?> c = target.getClass(); c != null && c != Object.class; c = c.getSuperclass()) {
+            try {
+                Field f = c.getDeclaredField(name);
+                f.setAccessible(true);
+                return f.get(target);
+            } catch (NoSuchFieldException ignored) {
+            } catch (Throwable t) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    private static Object invokeMethod(Object target, String name) {
+        if (target == null) return null;
+        try {
+            return target.getClass().getMethod(name).invoke(target);
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    private static void invokeArg(Object target, String name, Class<?> argType, Object arg) {
+        if (target == null) return;
+        try {
+            target.getClass().getMethod(name, argType).invoke(target, arg);
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static void setPrefVisible(Object pref, boolean visible) {
+        if (pref != null) {
+            invokeArg(pref, "setVisible", boolean.class, visible);
+        }
     }
 
     /**
@@ -1234,7 +1424,7 @@ public class HookEntry extends XposedModule {
 
                             int titleRes = ctx.getResources().getIdentifier("sec_brightness_outdoor_mode_title", "string", ctx.getPackageName());
                             int summaryRes = ctx.getResources().getIdentifier("sec_brightness_outdoor_mode_summary", "string", ctx.getPackageName());
-                            boolean isCs = "cs".equalsIgnoreCase(Locale.getDefault().getLanguage());
+                            boolean isCs = isCzech(ctx);
                             String title = titleRes != 0 ? ctx.getString(titleRes) : (isCs ? "Venkovní režim" : "Outdoor mode");
                             String summary = summaryRes != 0 ? ctx.getString(summaryRes) : (isCs ? "Zvýšit jas obrazovky pro venkovní použití. Režim se po 15 minutách automaticky vypne." : "Increase screen brightness for outdoor viewing. After 15 minutes, Outdoor mode will turn off.");
 

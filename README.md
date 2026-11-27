@@ -34,7 +34,7 @@ The module unlocks features that Samsung has software-locked on the S23 and adds
 | **Status Bar** | Screen edge spacing (`pref_sb_edge_space_mode`, `pref_sb_edge_space_dp`), Item spacing (`pref_sb_item_spacing`), Max notification icons `1–10` (`pref_sb_max_notif_icons`), Hidden status icons via `icon_blacklist` (`pref_sb_hidden_icons`), One connection icon (`pref_sb_one_connection_icon`), Status bar Back button (`pref_sb_back_button`), Screen burn-in pixel shift (`pref_sb_burn_in_protect`), Network speed meter (`pref_sb_net_speed`, `pref_sb_net_speed_mode`, `pref_sb_net_speed_auto_hide`) |
 | **Status Bar Taps** | Double-tap empty space to sleep (`pref_sb_double_tap_sleep`), Tap vibration + strength (`pref_sb_tap_vibrate`, `pref_sb_tap_vibrate_strength`), Customizable tap & long-press actions (including Camera and Open any app) with live Test button (`pref_sb_tap_*` / `pref_sb_long_*` for Battery, Clock, Front camera hole, Wi-Fi, Mobile signal) |
 | **Notifications** | Open notifications fully (`pref_notif_auto_expand`), Expand groups with one tap (`pref_notif_expand_groups_one_tap`), Keep silent notifications small (`pref_notif_keep_silent_small`) |
-| **System & Updates** | Native call recording (`pref_telephony_call_recording`), Show Wi-Fi passwords (`pref_system_show_wifi_passwords`), Bypass `FLAG_SECURE` (`pref_system_disable_flag_secure`), Disable telemetry (`pref_system_disable_telemetry`), Detailed battery info (`pref_system_battery_info`), Live Battery card, Restart SystemUI button, and GitHub Releases auto-updater (`pref_app_auto_update`) |
+| **System & Updates** | Native call recording (`pref_telephony_call_recording`), Show Wi-Fi passwords (`pref_system_show_wifi_passwords`), Bypass `FLAG_SECURE` (`pref_system_disable_flag_secure`), Disable telemetry (`pref_system_disable_telemetry`), App info package & install date (`pref_system_app_info_details`), Detailed battery info (`pref_system_battery_info`), Live Battery card, Restart SystemUI button, GitHub Releases auto-updater (`pref_app_auto_update`), English & Czech localization |
 
 For a detailed breakdown of hooks, discovered One UI boundaries, and non-portable features (Quick Share to iPhone, Now brief/nudge, corner gesture), refer to [NOTES.md](NOTES.md). See [CHANGELOG.md](CHANGELOG.md) for release history.
 
@@ -48,7 +48,7 @@ App (One UI)  ──►  SharedPreferences  ──►  mirror to Settings.Global
    └── Restart SystemUI ──►  HookEntry (LSPosed, main SystemUI process filtered)
                              ├── system_server      (FLAG_SECURE, telemetry)
                              ├── Camera             (Log, 4K60, 4K120, JPEG, shutter)
-                             ├── Settings           (display, timeouts, fonts, battery, Wi-Fi passwords)
+                             ├── Settings           (display, timeouts, fonts, battery, Wi-Fi passwords, app info details)
                              ├── SystemUI           (outdoor mode, lock screen widgets & charging details, StatusBar layout/icons/taps, notifications)
                              ├── AODService / DressRoom (lock screen ComplicationWidget multi-row grid & AOD charging details)
                              ├── One UI Home (Launcher) (Recents menu: Force stop, Restart, Clear cache, Screenshot)

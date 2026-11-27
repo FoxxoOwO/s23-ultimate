@@ -243,31 +243,32 @@ final class RecentsMenuHooks {
             int idx = indexOfAnchor(parent, anchorTitle(ctx, processPkg));
             if (idx < 0) return;
 
+            boolean cs = HookEntry.isCzech(ctx);
             int insertAt = idx + 1;
             if (showForceStop) {
                 if (!hasRow(parent, TAG_FORCE_STOP)) {
-                    parent.addView(menuRow(ctx, parent, "Force stop", TAG_FORCE_STOP,
+                    parent.addView(menuRow(ctx, parent, cs ? "Vynutit zastaven\u00ED" : "Force stop", TAG_FORCE_STOP,
                             RecentsMenuHooks::onForceStop), insertAt);
                 }
                 insertAt++;
             }
             if (showRestart) {
                 if (!hasRow(parent, TAG_RESTART)) {
-                    parent.addView(menuRow(ctx, parent, "Restart", TAG_RESTART,
+                    parent.addView(menuRow(ctx, parent, cs ? "Restartovat" : "Restart", TAG_RESTART,
                             RecentsMenuHooks::onRestart), insertAt);
                 }
                 insertAt++;
             }
             if (showClearCache) {
                 if (!hasRow(parent, TAG_CLEAR_CACHE)) {
-                    parent.addView(menuRow(ctx, parent, "Clear cache", TAG_CLEAR_CACHE,
+                    parent.addView(menuRow(ctx, parent, cs ? "Vymazat mezipam\u011B\u0165" : "Clear cache", TAG_CLEAR_CACHE,
                             RecentsMenuHooks::onClearCache), insertAt);
                 }
                 insertAt++;
             }
             if (showScreenshot) {
                 if (!hasRow(parent, TAG_SCREENSHOT)) {
-                    parent.addView(menuRow(ctx, parent, "Screenshot", TAG_SCREENSHOT,
+                    parent.addView(menuRow(ctx, parent, cs ? "Sn\u00EDmek obrazovky" : "Screenshot", TAG_SCREENSHOT,
                             RecentsMenuHooks::onScreenshot), insertAt);
                 }
             }
@@ -298,9 +299,10 @@ final class RecentsMenuHooks {
             TextView tv = findTextView(parent.getChildAt(i));
             if (tv == null || tv.getText() == null) continue;
             String text = tv.getText().toString();
+            String lower = text.toLowerCase(Locale.ROOT);
             if (anchorTitle != null
                     ? text.equals(anchorTitle)
-                    : text.toLowerCase(Locale.ROOT).contains("app info")) {
+                    : (lower.contains("app info") || lower.contains("informace o aplikaci"))) {
                 return i;
             }
         }
@@ -325,7 +327,8 @@ final class RecentsMenuHooks {
         final Context appCtx = v.getContext().getApplicationContext();
         new Thread(() -> {
             forceStopPkg(appCtx, pkg);
-            toast(appCtx, "Force stopped");
+            boolean cs = HookEntry.isCzech(appCtx);
+            toast(appCtx, cs ? "Aplikace ukon\u010Dena" : "Force stopped");
         }, "S23ForceStop").start();
     }
 
@@ -390,7 +393,8 @@ final class RecentsMenuHooks {
         Intent launch = ctx.getPackageManager().getLaunchIntentForPackage(pkg);
         if (launch == null) {
             Log.w(TAG, "Recents restart: no launch intent for " + pkg);
-            toast(ctx, "Cannot launch app");
+            boolean cs = HookEntry.isCzech(ctx);
+            toast(ctx, cs ? "Aplikaci nelze spustit" : "Cannot launch app");
             return;
         }
         launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
@@ -441,14 +445,17 @@ final class RecentsMenuHooks {
             }
         }
         Log.i(TAG, "Recents clear-cache pkg=" + pkg + " kb=" + kb);
+        boolean cs = HookEntry.isCzech(ctx);
         if (kb >= 1024L) {
-            toast(ctx, String.format(Locale.US, "Cache cleared (%.1f MB)", kb / 1024.0));
+            toast(ctx, cs
+                    ? String.format(Locale.getDefault(), "Mezipam\u011B\u0165 vymaz\u00E1na (%.1f MB)", kb / 1024.0)
+                    : String.format(Locale.US, "Cache cleared (%.1f MB)", kb / 1024.0));
         } else if (kb > 0L) {
-            toast(ctx, "Cache cleared (" + kb + " KB)");
+            toast(ctx, cs ? "Mezipam\u011B\u0165 vymaz\u00E1na (" + kb + " KB)" : "Cache cleared (" + kb + " KB)");
         } else if (kb == 0L) {
-            toast(ctx, "Cache cleared");
+            toast(ctx, cs ? "Mezipam\u011B\u0165 vymaz\u00E1na" : "Cache cleared");
         } else {
-            toast(ctx, "Failed to clear cache");
+            toast(ctx, cs ? "Vymaz\u00E1n\u00ED mezipam\u011Bti selhalo" : "Failed to clear cache");
         }
     }
 
@@ -551,7 +558,9 @@ final class RecentsMenuHooks {
                 try {
                     if (result != PixelCopy.SUCCESS) {
                         Log.w(TAG, "Recents PixelCopy failed: " + result);
-                        toast(appCtx, "Screenshot failed");
+                        toast(appCtx, HookEntry.isCzech(appCtx)
+                                ? "Po\u0159\u00EDzen\u00ED sn\u00EDmku selhalo"
+                                : "Screenshot failed");
                         return;
                     }
                     int[] at = new int[2];
@@ -569,7 +578,9 @@ final class RecentsMenuHooks {
             }, MAIN);
         } catch (Throwable t) {
             Log.w(TAG, "Recents PixelCopy error: " + t.getMessage());
-            toast(appCtx, "Screenshot failed");
+            toast(appCtx, HookEntry.isCzech(appCtx)
+                    ? "Po\u0159\u00EDzen\u00ED sn\u00EDmku selhalo"
+                    : "Screenshot failed");
         }
     }
 
@@ -588,7 +599,9 @@ final class RecentsMenuHooks {
             uri = ctx.getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
             if (uri == null) {
                 Log.w(TAG, "Recents screenshot: MediaStore returned null uri");
-                toast(ctx, "Screenshot failed");
+                toast(ctx, HookEntry.isCzech(ctx)
+                        ? "Po\u0159\u00EDzen\u00ED sn\u00EDmku selhalo"
+                        : "Screenshot failed");
                 return;
             }
             try (OutputStream out = ctx.getContentResolver().openOutputStream(uri)) {
@@ -601,7 +614,9 @@ final class RecentsMenuHooks {
             done.put(MediaStore.Images.Media.IS_PENDING, 0);
             ctx.getContentResolver().update(uri, done, null, null);
             Log.i(TAG, "Recents screenshot saved " + uri + " for " + pkg);
-            toast(ctx, "Screenshot saved");
+            toast(ctx, HookEntry.isCzech(ctx)
+                    ? "Sn\u00EDmek obrazovky ulo\u017Een"
+                    : "Screenshot saved");
         } catch (Throwable t) {
             if (uri != null) {
                 try {
@@ -610,7 +625,9 @@ final class RecentsMenuHooks {
                 }
             }
             Log.w(TAG, "Recents screenshot save failed: " + t.getMessage());
-            toast(ctx, "Screenshot failed");
+            toast(ctx, HookEntry.isCzech(ctx)
+                    ? "Po\u0159\u00EDzen\u00ED sn\u00EDmku selhalo"
+                    : "Screenshot failed");
         } finally {
             bitmap.recycle();
         }

@@ -1,0 +1,301 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">S23 Enhancer</string>
+    <string name="app_subtitle">Systémová, displejová, stavová a foto vylepšení pro Galaxy S23 Ultra</string>
+    <string name="footer_note">Změny se projeví po restartu cílové aplikace (nebo SystemUI). Vyžaduje aktivní LSPosed.</string>
+
+    <!-- Sections -->
+    <string name="sec_camera">Fotoaparát</string>
+    <string name="sec_display">Displej</string>
+    <string name="sec_system">Systém</string>
+
+    <!-- Camera -->
+    <string name="title_camera_log_video">Log Video</string>
+    <string name="desc_camera_log_video">Povolí nativní profil Samsung Log v režimu Pro Video pro maximální dynamický rozsah a barevné úpravy.</string>
+    <string name="title_camera_4k60_lenses">Přepínání objektivů ve 4K60</string>
+    <string name="desc_camera_4k60_lenses">Umožní přepínat mezi objektivy 0,6x, 1x, 3x a 10x při 4K 60 sn./s bez přechodu na digitální výřez.</string>
+    <string name="title_camera_4k120_slowmo">4K120 zpomalené video</string>
+    <string name="desc_camera_4k120_slowmo">Odemkne rozlišení 3840x2160 při 120 sn./s v režimu Zpomalený záběr (skrytá položka tabulky rozlišení).</string>
+    <string name="title_camera_jpeg_100">100% kvalita JPEG</string>
+    <string name="title_camera_shutter_mute">Ztlumení zvuku závěrky</string>
+    <string name="desc_camera_shutter_mute">Umožní vypnout zvuk závěrky fotoaparátu i v regionech vynucených zámkem CSC. Přidá přepínač Zvuk závěrky do nastavení Fotoaparátu.</string>
+    <string name="desc_camera_jpeg_100">Ukládá fotografie JPEG ve 100% kvalitě a vypíná dodatečnou rekompresi.</string>
+
+    <!-- Display -->
+    <string name="title_display_outdoor">Venkovní režim</string>
+    <string name="desc_display_outdoor">Odemkne přepínač Venkovního režimu v Nastavení &gt; Displej (lze jej přepínat tam nebo přes dlaždici Rychlých nastavení).</string>
+    <string name="title_display_screen_mode">Profily displeje</string>
+    <string name="desc_display_screen_mode">Odemkne režimy obrazovky AMOLED Kino (DCI-P3) a AMOLED Fotografie (Adobe RGB).</string>
+    <string name="row_active_profile">Aktivní profil</string>
+    <string name="title_display_screen_timeout">Rozšířené časové limity obrazovky</string>
+    <string name="desc_display_screen_timeout">Odemkne možnosti 30 minut, 1 hodina a Nikdy v nastavení Časový limit obrazovky.</string>
+    <string name="row_screen_timeout">Časový limit obrazovky</string>
+    <string name="title_display_action_timeout">Čas k provedení akce</string>
+    <string name="desc_display_action_timeout">Určuje, jak dlouho systém čeká na potvrzení u výzev přístupnosti.</string>
+    <string name="row_action_timeout">Limit pro akci</string>
+    <string name="title_display_ead">Adaptivní barevný tón (EAD)</string>
+    <string name="desc_display_ead">Vynutí podporu Adaptivního barevného tónu v nastavení Displeje.</string>
+    <string name="title_display_fonts">Odemknout vlastní písma</string>
+    <string name="desc_display_fonts">Umožní instalovat a používat vlastní systémová písma bez kontroly podpisu.</string>
+
+    <!-- System -->
+    <string name="title_call_recording">Nahrávání hovorů</string>
+    <string name="desc_call_recording">Povolí nativní tlačítko nahrávání hovorů v aplikaci Telefon Samsung.</string>
+    <string name="title_wifi_passwords">Zobrazit hesla k Wi-Fi</string>
+    <string name="desc_wifi_passwords">Zobrazí uložená hesla Wi-Fi jako prostý text bez nutnosti ověření zámkem obrazovky.</string>
+    <string name="title_flag_secure">Obejít omezení snímků obrazovky</string>
+    <string name="desc_flag_secure">Umožní pořizovat snímky a záznamy obrazovky v aplikacích chráněných příznakem FLAG_SECURE.</string>
+    <string name="title_telemetry">Zakázat telemetrii</string>
+    <string name="desc_telemetry">Zastaví odesílání záznamů o pádech a diagnostických hlášení systému.</string>
+    <string name="title_app_info_details">Název balíčku a datum instalace v Informacích o aplikaci</string>
+    <string name="desc_app_info_details">Zobrazí název balíčku (klepnutím zkopírujete) a datum instalace/aktualizace v Nastavení &gt; Aplikace &gt; Informace o aplikaci.</string>
+
+    <!-- Battery -->
+    <string name="sec_battery">Baterie</string>
+    <string name="batt_level">Úroveň nabití</string>
+    <string name="batt_status">Stav</string>
+    <string name="batt_source">Zdroj napájení</string>
+    <string name="batt_remaining">Čas do plného nabití</string>
+    <string name="batt_health">Kondice</string>
+    <string name="batt_temp">Teplota</string>
+    <string name="batt_voltage">Napětí</string>
+    <string name="batt_current">Proud</string>
+    <string name="batt_power">Výkon</string>
+    <string name="batt_charge">Čítač nabití</string>
+    <string name="batt_cycles">Počet cyklů</string>
+    <string name="batt_tech">Technologie</string>
+    <string name="batt_protect">Ochrana baterie</string>
+    <string name="batt_status_charging">Nabíjení</string>
+    <string name="batt_status_discharging">Vybíjení</string>
+    <string name="batt_status_full">Plně nabito</string>
+    <string name="batt_status_not_charging">Nenabíjí se</string>
+    <string name="batt_status_unknown">Neznámý</string>
+    <string name="batt_health_good">Dobrá</string>
+    <string name="batt_health_overheat">Přehřátí</string>
+    <string name="batt_health_dead">Poškozená</string>
+    <string name="batt_health_over_voltage">Přepětí</string>
+    <string name="batt_health_failure">Porucha</string>
+    <string name="batt_health_cold">Studená</string>
+    <string name="batt_health_unknown">Neznámá</string>
+    <string name="batt_src_ac">Nabíječka AC</string>
+    <string name="batt_src_usb">USB</string>
+    <string name="batt_src_wireless">Bezdrátové</string>
+    <string name="batt_src_dock">Dokovací stanice</string>
+    <string name="batt_src_none">Na baterii</string>
+    <string name="batt_protect_adaptive">Adaptivní (%1$d %%)</string>
+    <string name="batt_protect_on">Zapnuto (%1$d %%)</string>
+    <string name="batt_protect_off">Vypnuto</string>
+    <string name="batt_hours_minutes">%1$d h %2$d min</string>
+    <string name="batt_minutes">%1$d min</string>
+
+    <string name="title_battery_info">Podrobné informace o baterii</string>
+    <string name="desc_battery_info">Odemkne řádky Kondice baterie, Počet cyklů, Datum prvního použití a Datum výroby v Nastavení &gt; Baterie &gt; Informace o baterii. Hodnoty závisí na chráněných EFS souborech a mohou zůstat prázdné.</string>
+
+    <!-- Display profiles -->
+    <string name="mode_vivid">Živý</string>
+    <string name="mode_natural">Přirozený</string>
+    <string name="mode_cinema">AMOLED Kino</string>
+    <string name="mode_photo">AMOLED Fotografie</string>
+    <string name="mode_basic">Základní</string>
+
+    <!-- Screen timeouts -->
+    <string name="timeout_15s">15 sekund</string>
+    <string name="timeout_30s">30 sekund</string>
+    <string name="timeout_1m">1 minuta</string>
+    <string name="timeout_2m">2 minuty</string>
+    <string name="timeout_5m">5 minut</string>
+    <string name="timeout_10m">10 minut</string>
+    <string name="timeout_30m">30 minut</string>
+    <string name="timeout_1h">1 hodina</string>
+    <string name="timeout_never">Nikdy</string>
+
+    <!-- Action timeouts -->
+    <string name="action_default">Výchozí</string>
+    <string name="action_5s">5 sekund</string>
+    <string name="action_10s">10 sekund</string>
+    <string name="action_20s">20 sekund</string>
+    <string name="action_30s">30 sekund</string>
+    <string name="action_1m">1 minuta</string>
+    <string name="action_2m">2 minuty</string>
+    <string name="action_5m">5 minut</string>
+    <string name="action_custom">Vlastní…</string>
+    <string name="action_custom_title">Vlastní doba (sekundy)</string>
+    <string name="action_custom_hint">např. 45</string>
+    <string name="action_set">Použít</string>
+
+    <!-- Status & messages -->
+    <string name="status_supported">Podporováno</string>
+    <string name="status_test_device">Testovací zařízení</string>
+    <string name="toast_saved">Nastavení uloženo</string>
+    <string name="toast_error">Nepodařilo se použít nastavení: %1$s</string>
+    <string name="toast_invalid_value">Zadejte platné číslo</string>
+    <string name="toast_screen_mode">Profil displeje: %1$s</string>
+    <string name="toast_screen_timeout">Časový limit obrazovky: %1$s</string>
+    <string name="toast_action_timeout">Limit pro akci: %1$s</string>
+
+    <!-- Quick Settings -->
+    <string name="tile_outdoor_mode">Venkovní režim</string>
+    <string name="tile_outdoor_disabled">Vypnuto v S23 Enhancer</string>
+    <string name="tile_outdoor_on">1200 nitů</string>
+    <string name="tile_outdoor_off">Vypnuto</string>
+
+    <!-- Lock Screen -->
+    <string name="sec_lockscreen">Zamykací obrazovka</string>
+    <string name="row_lockscreen_widget_rows">Řádky widgetů na zamykací obrazovce</string>
+    <string name="ls_rows_default">Výchozí Samsung (1 řádek / 4 sloty)</string>
+    <string name="ls_rows_2">2 řádky (až 8 widgetů)</string>
+    <string name="ls_rows_3">3 řádky (až 12 widgetů)</string>
+    <string name="title_ls_charging_info">Podrobnosti o nabíjení</string>
+    <string name="desc_ls_charging_info">Během nabíjení zobrazí na zamykací obrazovce a AOD aktuální výkon, proud, napětí a teplotu.</string>
+
+    <!-- Recents -->
+    <string name="sec_recents">Nedávné</string>
+    <string name="title_recents_force_stop">Vynutit zastavení</string>
+    <string name="desc_recents_force_stop">Přidá možnost Vynutit zastavení do nabídky Nedávných aplikací bez odebrání karty.</string>
+    <string name="title_recents_restart">Restartovat</string>
+    <string name="desc_recents_restart">Přidá možnost Restartovat pro vynucené ukončení a nové spuštění aplikace.</string>
+    <string name="title_recents_clear_cache">Vymazat mezipaměť</string>
+    <string name="desc_recents_clear_cache">Přidá možnost Vymazat mezipaměť pro smazání pouze dočasných souborů cache.</string>
+    <string name="title_recents_screenshot">Snímek obrazovky</string>
+    <string name="desc_recents_screenshot">Přidá možnost Snímek obrazovky pro uložení čistého náhledu aplikace do Pictures/Screenshots.</string>
+
+    <!-- Status Bar -->
+    <string name="sec_statusbar">Stavový řádek</string>
+    <string name="sb_row_edge_space">Odsazení od okrajů obrazovky</string>
+    <string name="sb_edge_samsung">Výchozí Samsung</string>
+    <string name="sb_edge_tight">Úzké (4 dp)</string>
+    <string name="sb_edge_custom">Vlastní…</string>
+    <string name="sb_edge_custom_val">Vlastní (%1$d dp)</string>
+    <string name="sb_edge_custom_title">Okrajové odsazení (0–32 dp)</string>
+    <string name="sb_edge_custom_hint">např. 4</string>
+
+    <string name="sb_row_item_spacing">Mezery mezi položkami</string>
+    <string name="sb_item_spacing_sub">Menší mezera ponechá více místa pro ikony.</string>
+    <string name="sb_item_spacing_val">%1$d dp</string>
+    <string name="sb_reset">Obnovit</string>
+    <string name="sb_save">Uložit</string>
+
+    <string name="sb_row_max_notif_icons">Zobrazené ikony oznámení</string>
+    <string name="sb_max_notif_sub">Samsung ve výchozím stavu zobrazuje 3 ikony aplikací a pro ostatní tečku.</string>
+    <string name="sb_max_notif_val">Počet ikon: %1$d</string>
+
+    <string name="sb_row_hidden_icons">Viditelné ikony stavu</string>
+    <string name="sb_hidden_none">Žádné skryté</string>
+    <string name="sb_hidden_count">Skryto: %1$d</string>
+
+    <string name="sb_icon_wifi">Wi-Fi</string>
+    <string name="sb_icon_mobile">Mobilní signál</string>
+    <string name="sb_icon_bluetooth">Bluetooth</string>
+    <string name="sb_icon_alarm">Budík</string>
+    <string name="sb_icon_volume">Hlasitost / Vibrace</string>
+    <string name="sb_icon_nfc">NFC</string>
+    <string name="sb_icon_location">Poloha</string>
+    <string name="sb_icon_vpn">VPN</string>
+    <string name="sb_icon_hotspot">Hotspot</string>
+    <string name="sb_icon_headset">Sluchátka</string>
+    <string name="sb_icon_zen">Nerušit</string>
+    <string name="sb_icon_ims_volte">VoLTE / IMS</string>
+    <string name="sb_icon_secure_folder">Zabezpečená složka</string>
+    <string name="sb_icon_airplane">Režim Letadlo</string>
+    <string name="sb_icon_cast">Přenos obrazovky</string>
+    <string name="sb_icon_rotate">Automatické otáčení</string>
+    <string name="sb_icon_data_saver">Spořič dat</string>
+    <string name="sb_icon_power_saver">Úsporný režim</string>
+    <string name="sb_icon_clock">Hodiny</string>
+    <string name="sb_icon_battery">Baterie</string>
+
+    <string name="title_sb_one_conn">Jedna ikona připojení</string>
+    <string name="desc_sb_one_conn">Skryje ikonu mobilního signálu při připojení k Wi-Fi.</string>
+    <string name="title_sb_back_btn">Zobrazit tlačítko Zpět</string>
+    <string name="desc_sb_back_btn">Přidá kompaktní šipku Zpět (&lt;) na levý okraj stavového řádku.</string>
+    <string name="title_sb_burn_in">Ochrana proti vypálení obrazovky</string>
+    <string name="desc_sb_burn_in">Pravidelně posouvá prvky stavového řádku o několik pixelů (Samsung pixel-shift).</string>
+    <string name="title_sb_net_speed">Ukazatel rychlosti sítě</string>
+    <string name="desc_sb_net_speed">Zobrazuje aktuální rychlost stahování a odesílání ve stavovém řádku.</string>
+    <string name="sb_row_net_speed_mode">Zobrazení rychlosti sítě</string>
+    <string name="sb_net_mode_total">Celková rychlost (např. 2,4 MB/s)</string>
+    <string name="sb_net_mode_both">Stahování a odesílání (2 řádky)</string>
+    <string name="sb_net_mode_down">Pouze stahování</string>
+    <string name="title_sb_net_speed_auto_hide">Skrýt při nečinnosti</string>
+    <string name="desc_sb_net_speed_auto_hide">Skryje ukazatel rychlosti, když je přenos pod 1 KB/s.</string>
+
+    <!-- Status Bar Taps & Feedback -->
+    <string name="sec_sb_taps">Klepnutí na stavový řádek a odezva</string>
+    <string name="title_sb_double_tap_sleep">Dvojitým klepnutím vypnout obrazovku</string>
+    <string name="desc_sb_double_tap_sleep">Dvojité klepnutí na prázdné místo stavového řádku zamkne obrazovku.</string>
+    <string name="title_sb_vibrate">Vibrovat při klepnutí</string>
+    <string name="desc_sb_vibrate">Hmatová odezva při klepnutí nebo podržení prvku stavového řádku.</string>
+    <string name="sb_row_vibrate_strength">Síla vibrací</string>
+    <string name="sb_vib_light">Slabá</string>
+    <string name="sb_vib_medium">Střední</string>
+    <string name="sb_vib_strong">Silná</string>
+
+    <string name="sb_tap_batt">Ikona baterie — klepnutí</string>
+    <string name="sb_long_batt">Ikona baterie — dlouhé podržení</string>
+    <string name="sb_tap_clock">Hodiny — klepnutí</string>
+    <string name="sb_long_clock">Hodiny — dlouhé podržení</string>
+    <string name="sb_tap_hole">Průstřel přední kamery — klepnutí</string>
+    <string name="sb_long_hole">Průstřel přední kamery — dlouhé podržení</string>
+    <string name="sb_tap_wifi">Ikona Wi-Fi — klepnutí</string>
+    <string name="sb_long_wifi">Ikona Wi-Fi — dlouhé podržení</string>
+    <string name="sb_tap_mobile">Ikona mobilního signálu — klepnutí</string>
+    <string name="sb_long_mobile">Ikona mobilního signálu — dlouhé podržení</string>
+    <string name="sb_action_test">Otestovat</string>
+
+    <!-- Status Bar Actions -->
+    <string name="sb_act_none">Nedělat nic</string>
+    <string name="sb_act_sleep">Vypnout obrazovku</string>
+    <string name="sb_act_power_saving">Úsporný režim</string>
+    <string name="sb_act_battery_usage">Využití baterie</string>
+    <string name="sb_act_alarms">Budíky</string>
+    <string name="sb_act_timer">Časovač</string>
+    <string name="sb_act_finder">Samsung Finder (vyhledávání)</string>
+    <string name="sb_act_camera">Fotoaparát</string>
+    <string name="sb_act_app">Otevřít aplikaci…</string>
+    <string name="sb_act_app_val">Otevřít aplikaci: %1$s</string>
+    <string name="sb_act_app_pick_title">Vyberte aplikaci</string>
+    <string name="sb_act_app_none_found">Nebyly nalezeny žádné spustitelné aplikace</string>
+    <string name="sb_act_flashlight">Svítilna</string>
+    <string name="sb_act_screenshot">Snímek obrazovky</string>
+    <string name="sb_act_expand_notifications">Otevřít oznámení</string>
+    <string name="sb_act_expand_qs">Rychlé nastavení</string>
+    <string name="sb_act_wifi_toggle">Přepnout Wi-Fi</string>
+    <string name="sb_act_wifi_settings">Nastavení Wi-Fi</string>
+    <string name="sb_act_mobile_settings">Mobilní sítě</string>
+    <string name="sb_act_bluetooth_settings">Nastavení Bluetooth</string>
+    <string name="sb_act_volume_panel">Panel hlasitosti</string>
+    <string name="sb_act_back">Zpět</string>
+    <string name="sb_act_home">Domů</string>
+    <string name="sb_act_recents">Nedávné</string>
+
+    <!-- Notifications -->
+    <string name="sec_notifications">Oznámení</string>
+    <string name="title_notif_auto_expand">Rozbalovat oznámení naplno</string>
+    <string name="desc_notif_auto_expand">Automaticky rozbalí oznámení v roletce (projeví se při další aktualizaci panelu).</string>
+    <string name="title_notif_groups_one_tap">Rozbalit skupiny jedním klepnutím</string>
+    <string name="desc_notif_groups_one_tap">Rozbalení skupiny oznámení zároveň otevře všechna vnořená oznámení.</string>
+    <string name="title_notif_keep_silent_small">Ponechat tichá oznámení sbalená</string>
+    <string name="desc_notif_keep_silent_small">Zachová tichá oznámení a oznámení s nízkou prioritou sbalená.</string>
+
+    <!-- Restart SystemUI & Auto-Updater -->
+    <string name="row_restart_systemui">Restartovat SystemUI</string>
+    <string name="val_restart_systemui">Použít změny</string>
+    <string name="confirm_restart_systemui_msg">Restartuje pouze SystemUI (telefon se nerestartuje). Obrazovka krátce problikne.</string>
+    <string name="action_restart">Restartovat</string>
+    <string name="toast_restarting_systemui">Restartuji SystemUI…</string>
+
+    <string name="title_auto_update">Automatické aktualizace</string>
+    <string name="desc_auto_update">Při spuštění zkontroluje GitHub Releases a upozorní na novou verzi.</string>
+    <string name="row_check_updates">Zkontrolovat aktualizace</string>
+    <string name="val_version">v%1$s</string>
+    <string name="update_checking">Kontroluji aktualizace…</string>
+    <string name="update_up_to_date">Máte nejnovější verzi (v%1$s)</string>
+    <string name="update_available_title">Je dostupná aktualizace (%1$s)</string>
+    <string name="update_action_install">Stáhnout a nainstalovat</string>
+    <string name="update_downloading">Stahuji aktualizaci…</string>
+    <string name="update_installing">Spouštím instalátor…</string>
+    <string name="update_installed">Aktualizace nainstalována</string>
+    <string name="update_failed">Kontrola aktualizace selhala: %1$s</string>
+    <string name="update_perm_required">Povolte instalaci aktualizací z aplikace S23 Enhancer</string>
+    <string name="update_no_apk">Otevírám stránku vydání v prohlížeči…</string>
+</resources>
