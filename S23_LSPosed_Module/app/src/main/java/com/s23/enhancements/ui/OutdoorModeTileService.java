@@ -8,7 +8,6 @@ import android.provider.Settings;
 import android.service.quicksettings.Tile;
 import android.service.quicksettings.TileService;
 import android.util.Log;
-import com.s23.enhancements.PrefProvider;
 import com.s23.enhancements.R;
 
 public class OutdoorModeTileService extends TileService {
@@ -20,7 +19,7 @@ public class OutdoorModeTileService extends TileService {
 
     /** The tile only works while the feature is enabled in the companion app. */
     private boolean isFeatureEnabled() {
-        return getSharedPreferences(PrefProvider.PREF_NAME, MODE_PRIVATE)
+        return getSharedPreferences(MainActivity.PREF_NAME, MODE_PRIVATE)
                 .getBoolean(KEY_OUTDOOR, true);
     }
 

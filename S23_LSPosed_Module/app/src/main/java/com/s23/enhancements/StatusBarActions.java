@@ -12,6 +12,8 @@ import android.media.AudioManager;
 import android.net.Uri;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.PowerManager;
 import android.os.SystemClock;
 import android.os.VibrationEffect;
@@ -26,6 +28,8 @@ import android.view.KeyEvent;
 import android.view.View;
 
 import java.lang.reflect.Method;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Shared status bar tap/long-press actions and haptic feedback helpers.
@@ -84,6 +88,8 @@ public final class StatusBarActions {
     };
 
     private static volatile boolean sTorchOn = false;
+    private static volatile boolean sTorchCallbackRegistered = false;
+    private static final Map<String, Boolean> sTorchStates = new ConcurrentHashMap<>();
 
     /** SystemUI BatteryControllerImpl instance captured by SystemUiHooks as fallback. */
     public static volatile Object sBatteryController;
@@ -381,6 +387,30 @@ public final class StatusBarActions {
     private static void toggleFlashlight(Context ctx) throws Throwable {
         CameraManager cm = (CameraManager) ctx.getSystemService(Context.CAMERA_SERVICE);
         if (cm == null) return;
+        if (!sTorchCallbackRegistered) {
+            sTorchCallbackRegistered = true;
+            try {
+                cm.registerTorchCallback(new CameraManager.TorchCallback() {
+                    @Override
+                    public void onTorchModeChanged(String cameraId, boolean enabled) {
+                        if (cameraId != null) {
+                            sTorchStates.put(cameraId, enabled);
+                        }
+                        sTorchOn = enabled;
+                    }
+
+                    @Override
+                    public void onTorchModeUnavailable(String cameraId) {
+                        if (cameraId != null) {
+                            sTorchStates.put(cameraId, Boolean.FALSE);
+                        }
+                        sTorchOn = false;
+                    }
+                }, new Handler(Looper.getMainLooper()));
+            } catch (Throwable t) {
+                sTorchCallbackRegistered = false;
+            }
+        }
         for (String id : cm.getCameraIdList()) {
             CameraCharacteristics cc = cm.getCameraCharacteristics(id);
             Boolean hasFlash = cc.get(CameraCharacteristics.FLASH_INFO_AVAILABLE);
@@ -388,8 +418,11 @@ public final class StatusBarActions {
             if (Boolean.TRUE.equals(hasFlash)
                     && facing != null
                     && facing == CameraCharacteristics.LENS_FACING_BACK) {
-                boolean next = !sTorchOn;
+                Boolean recorded = sTorchStates.get(id);
+                boolean currentlyOn = recorded != null ? recorded : sTorchOn;
+                boolean next = !currentlyOn;
                 cm.setTorchMode(id, next);
+                sTorchStates.put(id, next);
                 sTorchOn = next;
                 return;
             }

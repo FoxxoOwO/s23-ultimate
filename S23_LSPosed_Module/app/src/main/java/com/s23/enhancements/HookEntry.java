@@ -54,11 +54,18 @@ public class HookEntry extends XposedModule {
             "com.samsung.android.app.facewidget.complication.ComplicationWidgetSizeManager";
     private final java.util.Set<Class<?>> mHookedComplicationManagers =
             java.util.Collections.newSetFromMap(new java.util.WeakHashMap<>());
+    private volatile boolean mComplicationHooked;
     private volatile boolean mLoggedLockscreenWidgetOverride;
+
+    private static final CaptureRequest.Key<Boolean> KEY_DUAL_CAMERA_DISABLE =
+            new CaptureRequest.Key<>("samsung.android.control.dualCameraDisable", Boolean.class);
+    private static final CaptureRequest.Key<Long> KEY_SPECIAL_IMAGE_QUALITY_POLICY =
+            new CaptureRequest.Key<>("samsung.android.control.specialImageQualityPolicy", Long.class);
 
     /** Cached camera toggles (read once per hooked camera process, hot path). */
     private volatile boolean mCamLogVideo = true;
     private volatile boolean mCamLenses = true;
+    private volatile boolean mCamJpeg100 = true;
     private volatile boolean mCamShutterMute = true;
     private volatile boolean mCam4k120SlowMo = true;
     private volatile int mForcedTagCount;
@@ -387,6 +394,7 @@ public class HookEntry extends XposedModule {
         //    builds used P1.f / O1.f, ...). Hooking EnumMap.put therefore works for every version.
         mCamLogVideo = isPref("pref_camera_log_video", true);
         mCamLenses = isPref("pref_camera_4k60_lenses", true);
+        mCamJpeg100 = isPref("pref_camera_jpeg_100", true);
         mCamShutterMute = isPref(PREF_CAM_SHUTTER_MUTE, true);
         mCam4k120SlowMo = isPref(PREF_CAM_4K120_SLOWMO, true);
         try {
@@ -516,15 +524,14 @@ public class HookEntry extends XposedModule {
         try {
             Class<?> crbCls = CaptureRequest.Builder.class;
             hookAllMethods(crbCls, "build", chain -> {
-                try {
-                    CaptureRequest.Builder b = (CaptureRequest.Builder) chain.getThisObject();
-                    CaptureRequest.Key<Boolean> dualCamKey = new CaptureRequest.Key<>("samsung.android.control.dualCameraDisable", Boolean.class);
-                    b.set(dualCamKey, Boolean.TRUE);
-
-                    CaptureRequest.Key<Long> policyKey = new CaptureRequest.Key<>("samsung.android.control.specialImageQualityPolicy", Long.class);
-                    Long curPolicy = b.get(policyKey);
-                    b.set(policyKey, (curPolicy != null ? curPolicy : 0L) | 2L);
-                } catch (Throwable ignored) {}
+                if (mCamLenses) {
+                    try {
+                        CaptureRequest.Builder b = (CaptureRequest.Builder) chain.getThisObject();
+                        b.set(KEY_DUAL_CAMERA_DISABLE, Boolean.TRUE);
+                        Long curPolicy = b.get(KEY_SPECIAL_IMAGE_QUALITY_POLICY);
+                        b.set(KEY_SPECIAL_IMAGE_QUALITY_POLICY, (curPolicy != null ? curPolicy : 0L) | 2L);
+                    } catch (Throwable ignored) {}
+                }
                 return chain.proceed();
             });
             Log.i(TAG, "Hooked CaptureRequest.Builder.build for dualCameraDisable & fallback prevention");
@@ -537,16 +544,16 @@ public class HookEntry extends XposedModule {
                 Object key = chain.getArg(0);
                 if (key instanceof CaptureRequest.Key) {
                     String name = ((CaptureRequest.Key<?>) key).getName();
-                    if ("samsung.android.control.dualCameraDisable".equals(name)) {
+                    if (mCamLenses && "samsung.android.control.dualCameraDisable".equals(name)) {
                         return chain.proceed(new Object[]{key, Boolean.TRUE});
                     }
-                    if ("samsung.android.control.specialImageQualityPolicy".equals(name)) {
+                    if (mCamLenses && "samsung.android.control.specialImageQualityPolicy".equals(name)) {
                         Object val = chain.getArg(1);
                         if (val instanceof Long) {
                             return chain.proceed(new Object[]{key, ((Long) val) | 2L});
                         }
                     }
-                    if (CaptureRequest.JPEG_QUALITY.equals(key) && isPref("pref_camera_jpeg_100", true)) {
+                    if (mCamJpeg100 && CaptureRequest.JPEG_QUALITY.equals(key)) {
                         return chain.proceed(new Object[]{key, (byte) 100});
                     }
                 }
@@ -556,7 +563,7 @@ public class HookEntry extends XposedModule {
 
         try {
             hookAllMethods(Bitmap.class, "compress", chain -> {
-                if (isPref("pref_camera_jpeg_100", true)) {
+                if (mCamJpeg100) {
                     Object format = chain.getArg(0);
                     if (Bitmap.CompressFormat.JPEG.equals(format)) {
                         Object[] args = chain.getArgs().toArray();
@@ -1010,10 +1017,19 @@ public class HookEntry extends XposedModule {
             hookAllMethods(displayUtils, "getTimeoutDescription", chain -> {
                 if (!isPref("pref_display_screen_timeout", true)) return chain.proceed();
                 try {
-                    long timeout = ((Number) chain.getArg(0)).longValue();
-                    if (timeout >= 2147483640L || timeout < 0) {
-                        boolean isCs = isCzech(null);
-                        return isCs ? "Nikdy" : "Never";
+                    long timeout = -1L;
+                    boolean hasTimeout = false;
+                    Context descCtx = null;
+                    for (Object a : chain.getArgs()) {
+                        if (a instanceof Number && !hasTimeout) {
+                            timeout = ((Number) a).longValue();
+                            hasTimeout = true;
+                        } else if (a instanceof Context && descCtx == null) {
+                            descCtx = (Context) a;
+                        }
+                    }
+                    if (hasTimeout && (timeout >= 2147483640L || timeout < 0)) {
+                        return isCzech(descCtx) ? "Nikdy" : "Never";
                     }
                 } catch (Throwable ignored) {}
                 return chain.proceed();
@@ -1111,11 +1127,20 @@ public class HookEntry extends XposedModule {
                 String m0 = args.size() > 0 && args.get(0) != null ? args.get(0).toString() : "";
                 String m1 = args.size() > 1 && args.get(1) != null ? args.get(1).toString() : "";
                 if ("set_outdoor_mode".equals(m0) || "set_outdoor_mode".equals(m1)) {
+                    android.content.ContentProvider cp = (android.content.ContentProvider) chain.getThisObject();
+                    if (cp == null) return chain.proceed();
+                    String callingPkg = cp.getCallingPackage();
+                    int callingUid = android.os.Binder.getCallingUid();
+                    if (!"com.s23.enhancements".equals(callingPkg)
+                            && callingUid != Process.SYSTEM_UID
+                            && callingUid != 0) {
+                        Log.w(TAG, "Blocked unauthorized set_outdoor_mode from pkg=" + callingPkg + " uid=" + callingUid);
+                        return chain.proceed();
+                    }
                     String valStr = "set_outdoor_mode".equals(m0)
                         ? (args.size() > 1 && args.get(1) != null ? args.get(1).toString() : "0")
                         : (args.size() > 2 && args.get(2) != null ? args.get(2).toString() : "0");
                     int val = "1".equals(valStr) ? 1 : 0;
-                    android.content.ContentProvider cp = (android.content.ContentProvider) chain.getThisObject();
                     Context ctx = cp.getContext();
                     if (ctx != null) {
                         Settings.System.putInt(ctx.getContentResolver(), "display_outdoor_mode", val);
@@ -1223,6 +1248,7 @@ public class HookEntry extends XposedModule {
 
                     Method addPref = parentGroup.getClass().getMethod("addPreference", cl.loadClass("androidx.preference.Preference"));
 
+                    boolean createdPkgPref = false;
                     if (pkgPref == null) {
                         pkgPref = newSettingsPreference(cl, pref, ctx);
                         if (pkgPref != null) {
@@ -1232,40 +1258,49 @@ public class HookEntry extends XposedModule {
                             invokeArg(pkgPref, "setOrder", int.class, baseOrder + 1);
                             invokeArg(pkgPref, "setSelectable", boolean.class, true);
                             addPref.invoke(parentGroup, pkgPref);
+                            createdPkgPref = true;
                         }
                     }
+                    boolean pkgChanged = createdPkgPref;
                     if (pkgPref != null) {
+                        Object prevSummary = invokeMethod(pkgPref, "getSummary");
+                        if (!pkgName.equals(prevSummary != null ? prevSummary.toString() : null)) {
+                            pkgChanged = true;
+                        }
                         invokeArg(pkgPref, "setTitle", CharSequence.class,
                                 isCs ? "N\u00E1zev bal\u00ED\u010Dku" : "Package name");
                         invokeArg(pkgPref, "setSummary", CharSequence.class, pkgName);
                         setPrefVisible(pkgPref, true);
 
-                        try {
-                            Class<?> listenerCls = cl.loadClass("androidx.preference.Preference$OnPreferenceClickListener");
-                            Object proxy = java.lang.reflect.Proxy.newProxyInstance(
-                                    cl,
-                                    new Class<?>[]{listenerCls},
-                                    (pObj, method, args) -> {
-                                        if ("onPreferenceClick".equals(method.getName())) {
-                                            try {
-                                                android.content.ClipboardManager cm =
-                                                        (android.content.ClipboardManager) ctx.getSystemService(Context.CLIPBOARD_SERVICE);
-                                                if (cm != null) {
-                                                    cm.setPrimaryClip(android.content.ClipData.newPlainText("package", pkgName));
-                                                    android.widget.Toast.makeText(
-                                                            ctx,
-                                                            isCs ? "N\u00E1zev bal\u00ED\u010Dku zkop\u00EDrov\u00E1n" : "Package name copied",
-                                                            android.widget.Toast.LENGTH_SHORT).show();
+                        if (pkgChanged) {
+                            try {
+                                Class<?> listenerCls = cl.loadClass("androidx.preference.Preference$OnPreferenceClickListener");
+                                Object proxy = java.lang.reflect.Proxy.newProxyInstance(
+                                        cl,
+                                        new Class<?>[]{listenerCls},
+                                        (pObj, method, args) -> {
+                                            if ("onPreferenceClick".equals(method.getName())) {
+                                                try {
+                                                    android.content.ClipboardManager cm =
+                                                            (android.content.ClipboardManager) ctx.getSystemService(Context.CLIPBOARD_SERVICE);
+                                                    if (cm != null) {
+                                                        boolean toastCs = isCzech(ctx);
+                                                        cm.setPrimaryClip(android.content.ClipData.newPlainText("package", pkgName));
+                                                        android.widget.Toast.makeText(
+                                                                ctx,
+                                                                toastCs ? "N\u00E1zev bal\u00ED\u010Dku zkop\u00EDrov\u00E1n" : "Package name copied",
+                                                                android.widget.Toast.LENGTH_SHORT).show();
+                                                    }
+                                                } catch (Throwable ignored) {
                                                 }
-                                            } catch (Throwable ignored) {
+                                                return Boolean.TRUE;
                                             }
-                                            return Boolean.TRUE;
-                                        }
-                                        return null;
-                                    });
-                            pkgPref.getClass().getMethod("setOnPreferenceClickListener", listenerCls)
-                                    .invoke(pkgPref, proxy);
-                        } catch (Throwable ignored) {
+                                            return null;
+                                        });
+                                pkgPref.getClass().getMethod("setOnPreferenceClickListener", listenerCls)
+                                        .invoke(pkgPref, proxy);
+                            } catch (Throwable ignored) {
+                            }
                         }
                     }
 
@@ -1293,7 +1328,9 @@ public class HookEntry extends XposedModule {
                         invokeArg(datePref, "setSummary", CharSequence.class, summary.toString());
                         setPrefVisible(datePref, true);
                     }
-                    Log.i(TAG, "Injected App Info details for " + pkgName);
+                    if (pkgChanged) {
+                        Log.i(TAG, "Injected App Info details for " + pkgName);
+                    }
                 } catch (Throwable t) {
                     Log.w(TAG, "AppInfo details inject failed: " + t.getMessage());
                 }
@@ -1535,6 +1572,7 @@ public class HookEntry extends XposedModule {
             try {
                 Method loadClassMethod = ClassLoader.class.getDeclaredMethod("loadClass", String.class, boolean.class);
                 hook(loadClassMethod).intercept(chain -> {
+                    if (mComplicationHooked) return chain.proceed();
                     Object res = chain.proceed();
                     if (!chain.getArgs().isEmpty()
                             && COMPLICATION_SIZE_MANAGER_CLASS.equals(chain.getArg(0))
@@ -1554,6 +1592,7 @@ public class HookEntry extends XposedModule {
         synchronized (mHookedComplicationManagers) {
             if (!mHookedComplicationManagers.add(cls)) return;
         }
+        mComplicationHooked = true;
         hookAllMethods(cls, "getRow", chain -> {
             Object orig = chain.proceed();
             if (orig instanceof Integer && ((Integer) orig) == 1) {

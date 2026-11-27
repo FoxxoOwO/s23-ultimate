@@ -24,12 +24,10 @@ import androidx.preference.SwitchPreferenceCompat;
 
 import com.google.android.material.appbar.CollapsingToolbarLayout;
 import com.s23.enhancements.AppUpdater;
-import com.s23.enhancements.PrefProvider;
 import com.s23.enhancements.R;
 import com.s23.enhancements.StatusBarActions;
 import com.s23.enhancements.ui.oneui.OneUiDialog;
 
-import java.io.File;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -45,6 +43,8 @@ import java.util.Set;
  * CollapsingToolbarLayout, and PreferenceFragmentCompat.
  */
 public class MainActivity extends AppCompatActivity {
+
+    public static final String PREF_NAME = "s23_preferences";
 
     // Camera
     public static final String KEY_CAMERA_LOG_VIDEO = "pref_camera_log_video";
@@ -204,7 +204,7 @@ public class MainActivity extends AppCompatActivity {
             collapsing.seslSetSubtitle(getString(R.string.app_subtitle));
         }
 
-        mPrefs = getSharedPreferences(PrefProvider.PREF_NAME, Context.MODE_PRIVATE);
+        mPrefs = getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
 
         if (savedInstanceState == null) {
             getSupportFragmentManager()
@@ -213,7 +213,6 @@ public class MainActivity extends AppCompatActivity {
                     .commit();
         }
 
-        updatePermissions();
         syncAllPrefsToGlobal();
         AppUpdater.checkOnStartup(this, mPrefs);
     }
@@ -287,17 +286,6 @@ public class MainActivity extends AppCompatActivity {
         return StatusBarActions.ACTION_NONE;
     }
 
-    private void updatePermissions() {
-        try {
-            File prefsDir = new File(getApplicationInfo().dataDir, "shared_prefs");
-            File prefsFile = new File(prefsDir, PrefProvider.PREF_NAME + ".xml");
-            if (prefsFile.exists()) {
-                prefsFile.setReadable(true, false);
-            }
-        } catch (Throwable ignored) {
-        }
-    }
-
     // ------------------------------------------------------------------ SESL9 PreferenceFragmentCompat
 
     public static class SettingsFragment extends PreferenceFragmentCompat {
@@ -340,7 +328,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
             Context ctx = requireContext();
-            getPreferenceManager().setSharedPreferencesName(PrefProvider.PREF_NAME);
+            getPreferenceManager().setSharedPreferencesName(PREF_NAME);
             PreferenceScreen screen = getPreferenceManager().createPreferenceScreen(ctx);
             setPreferenceScreen(screen);
 
@@ -442,7 +430,6 @@ public class MainActivity extends AppCompatActivity {
                 boolean checked = Boolean.TRUE.equals(newVal);
                 prefs().edit().putBoolean(key, checked).apply();
                 host().mirrorToGlobal(key, checked);
-                host().updatePermissions();
                 syncDependencies();
                 toast(getString(R.string.toast_saved));
                 return true;
@@ -571,7 +558,6 @@ public class MainActivity extends AppCompatActivity {
                         int val = values[which];
                         prefs().edit().putInt(KEY_LOCKSCREEN_WIDGET_ROWS, val).apply();
                         host().mirrorIntToGlobal(KEY_LOCKSCREEN_WIDGET_ROWS, val);
-                        host().updatePermissions();
                         syncLockScreenSummary();
                         toast(getString(R.string.toast_saved));
                     });
@@ -985,7 +971,6 @@ public class MainActivity extends AppCompatActivity {
             OneUiDialog.showSingleChoice(host(), getString(R.string.sb_row_net_speed_mode), options, cur, idx -> {
                 prefs().edit().putInt(KEY_SB_NET_SPEED_MODE, idx).apply();
                 host().mirrorIntToGlobal(KEY_SB_NET_SPEED_MODE, idx);
-                host().updatePermissions();
                 syncStatusBarSummaries();
                 toast(getString(R.string.toast_saved));
             });
@@ -1401,12 +1386,6 @@ public class MainActivity extends AppCompatActivity {
             toast(getString(R.string.toast_restarting_systemui));
             Context ctx = host();
             try {
-                Intent intent = new Intent("com.s23.enhancements.ACTION_RESTART_SYSTEMUI");
-                intent.setPackage("com.android.systemui");
-                ctx.sendBroadcast(intent);
-            } catch (Throwable ignored) {
-            }
-            try {
                 Settings.Global.putLong(ctx.getContentResolver(),
                         GLOBAL_PREFIX + "cmd_restart_systemui", System.currentTimeMillis());
             } catch (Throwable ignored) {
@@ -1420,7 +1399,7 @@ public class MainActivity extends AppCompatActivity {
                     p.waitFor();
                 } catch (Throwable ignored) {
                 }
-            }).start();
+            }, "s23enh-restart-sysui").start();
         }
 
         private long currentTimeout() {
@@ -1451,7 +1430,7 @@ public class MainActivity extends AppCompatActivity {
             try {
                 Settings.System.putInt(host().getContentResolver(), key, value);
             } catch (Throwable t) {
-                runShell("settings put system " + key + " " + value);
+                runSettingsPutAsync("system", key, String.valueOf(value));
             }
         }
 
@@ -1459,7 +1438,7 @@ public class MainActivity extends AppCompatActivity {
             try {
                 Settings.System.putLong(host().getContentResolver(), key, value);
             } catch (Throwable t) {
-                runShell("settings put system " + key + " " + value);
+                runSettingsPutAsync("system", key, String.valueOf(value));
             }
         }
 
@@ -1467,7 +1446,7 @@ public class MainActivity extends AppCompatActivity {
             try {
                 Settings.Secure.putString(host().getContentResolver(), key, value);
             } catch (Throwable t) {
-                runShell("settings put secure " + key + " " + value);
+                runSettingsPutAsync("secure", key, value);
             }
         }
 
@@ -1482,12 +1461,14 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        private static void runShell(String command) {
-            try {
-                Process p = Runtime.getRuntime().exec(new String[]{"sh", "-c", command});
-                p.waitFor();
-            } catch (Throwable ignored) {
-            }
+        private static void runSettingsPutAsync(String namespace, String key, String value) {
+            new Thread(() -> {
+                try {
+                    Process p = Runtime.getRuntime().exec(new String[]{"settings", "put", namespace, key, value});
+                    p.waitFor();
+                } catch (Throwable ignored) {
+                }
+            }, "s23enh-settings-put").start();
         }
     }
 }

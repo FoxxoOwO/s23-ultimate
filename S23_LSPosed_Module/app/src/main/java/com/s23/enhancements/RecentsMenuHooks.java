@@ -423,14 +423,15 @@ final class RecentsMenuHooks {
         }
 
         // 2) Sanitized root clear strictly scoped to cache & code_cache directories (never app data)
+        int userId = currentUserId();
         String script =
-                "P='" + pkg + "'; "
-                + "KB=$(du -sk /data/user/0/\"$P\"/cache /data/user/0/\"$P\"/code_cache "
-                + "/storage/emulated/0/Android/data/\"$P\"/cache 2>/dev/null "
+                "U=" + userId + "; P='" + pkg + "'; "
+                + "KB=$(du -sk /data/user/\"$U\"/\"$P\"/cache /data/user/\"$U\"/\"$P\"/code_cache "
+                + "/storage/emulated/\"$U\"/Android/data/\"$P\"/cache 2>/dev/null "
                 + "| awk '{s+=$1} END {print s+0}'); "
-                + "rm -rf /data/user/0/\"$P\"/cache/* /data/user/0/\"$P\"/cache/.[!.]* "
-                + "/data/user/0/\"$P\"/code_cache/* /data/user/0/\"$P\"/code_cache/.[!.]* "
-                + "/storage/emulated/0/Android/data/\"$P\"/cache/* 2>/dev/null; "
+                + "rm -rf /data/user/\"$U\"/\"$P\"/cache/* /data/user/\"$U\"/\"$P\"/cache/.[!.]* "
+                + "/data/user/\"$U\"/\"$P\"/code_cache/* /data/user/\"$U\"/\"$P\"/code_cache/.[!.]* "
+                + "/storage/emulated/\"$U\"/Android/data/\"$P\"/cache/* 2>/dev/null; "
                 + "echo \"CLEARED:$KB\"";
         String out = runSu(script);
         long kb = -1L;
@@ -646,7 +647,19 @@ final class RecentsMenuHooks {
         return isValidPackageName(pkg) ? pkg : null;
     }
 
-    private static boolean isValidPackageName(String pkg) {
+    private static int currentUserId() {
+        try {
+            Object id = android.os.UserHandle.class.getMethod("myUserId").invoke(null);
+            if (id instanceof Number) {
+                int v = ((Number) id).intValue();
+                if (v >= 0) return v;
+            }
+        } catch (Throwable ignored) {
+        }
+        return 0;
+    }
+
+    static boolean isValidPackageName(String pkg) {
         return pkg != null
                 && !pkg.isEmpty()
                 && !pkg.contains("..")

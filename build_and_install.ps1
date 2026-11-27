@@ -79,6 +79,10 @@ if (-not $devId) {
 if ($devId) {
     Write-Host "Found device: $devId"
     & "$adb" -s $devId install -r "$outApk"
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "ADB install failed with exit code $LASTEXITCODE"
+        exit $LASTEXITCODE
+    }
     & "$adb" -s $devId shell "pm grant com.s23.enhancements android.permission.WRITE_SECURE_SETTINGS 2>/dev/null; appops set com.s23.enhancements WRITE_SETTINGS allow 2>/dev/null"
     Write-Host "Permissions granted to com.s23.enhancements"
 } else {

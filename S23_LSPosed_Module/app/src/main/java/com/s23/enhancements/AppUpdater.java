@@ -24,6 +24,8 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -40,6 +42,8 @@ public final class AppUpdater {
     private static final String KEY_LAST_CHECK_MS = "pref_app_last_update_check_ms";
     private static final long CHECK_INTERVAL_MS = 6L * 60L * 60L * 1000L;
     private static final int TIMEOUT_MS = 10_000;
+    private static final AtomicBoolean sChecking = new AtomicBoolean(false);
+    private static final AtomicBoolean sDownloading = new AtomicBoolean(false);
 
     private static final class ReleaseInfo {
         final String tag;
@@ -84,6 +88,9 @@ public final class AppUpdater {
     }
 
     private static void runCheck(Activity activity, SharedPreferences prefs, boolean userInitiated) {
+        if (!sChecking.compareAndSet(false, true)) {
+            return;
+        }
         final String currentVer = getCurrentVersion(activity);
         new Thread(() -> {
             try {
@@ -111,6 +118,8 @@ public final class AppUpdater {
                             activity.getString(R.string.update_failed, msg),
                             Toast.LENGTH_LONG).show());
                 }
+            } finally {
+                sChecking.set(false);
             }
         }, "s23enh-update-check").start();
     }
@@ -204,8 +213,16 @@ public final class AppUpdater {
 
     private static void startInstall(Activity activity, ReleaseInfo info) {
         if (info.apkUrl == null || info.apkUrl.isEmpty()) {
-            Toast.makeText(activity, R.string.update_no_apk, Toast.LENGTH_SHORT).show();
-            activity.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(info.htmlUrl)));
+            if (info.htmlUrl != null && info.htmlUrl.startsWith("https://github.com/")) {
+                Toast.makeText(activity, R.string.update_no_apk, Toast.LENGTH_SHORT).show();
+                activity.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(info.htmlUrl)));
+            }
+            return;
+        }
+        if (!isAllowedDownloadUrl(info.apkUrl)) {
+            Toast.makeText(activity,
+                    activity.getString(R.string.update_failed, "Disallowed update URL"),
+                    Toast.LENGTH_LONG).show();
             return;
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
@@ -214,6 +231,9 @@ public final class AppUpdater {
             Intent perm = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
                     Uri.parse("package:" + activity.getPackageName()));
             activity.startActivity(perm);
+            return;
+        }
+        if (!sDownloading.compareAndSet(false, true)) {
             return;
         }
 
@@ -274,15 +294,37 @@ public final class AppUpdater {
                             Toast.LENGTH_LONG).show());
                 }
             } finally {
+                sDownloading.set(false);
                 if (conn != null) conn.disconnect();
             }
         }, "s23enh-update-dl").start();
+    }
+
+    static boolean isAllowedDownloadUrl(String urlStr) {
+        if (urlStr == null || urlStr.trim().isEmpty()) return false;
+        try {
+            URL u = new URL(urlStr.trim());
+            if (!"https".equalsIgnoreCase(u.getProtocol())) return false;
+            String host = u.getHost();
+            if (host == null) return false;
+            host = host.toLowerCase(Locale.ROOT);
+            return "github.com".equals(host)
+                    || "api.github.com".equals(host)
+                    || "objects.githubusercontent.com".equals(host)
+                    || "release-assets.githubusercontent.com".equals(host)
+                    || host.endsWith(".githubusercontent.com");
+        } catch (Throwable t) {
+            return false;
+        }
     }
 
     private static HttpURLConnection openWithRedirects(String urlStr, String currentVer, int maxRedirects)
             throws Exception {
         String cur = urlStr;
         for (int i = 0; i <= maxRedirects; i++) {
+            if (!isAllowedDownloadUrl(cur)) {
+                throw new SecurityException("Disallowed update URL: " + cur);
+            }
             HttpURLConnection conn = (HttpURLConnection) new URL(cur).openConnection();
             conn.setInstanceFollowRedirects(false);
             conn.setConnectTimeout(TIMEOUT_MS);

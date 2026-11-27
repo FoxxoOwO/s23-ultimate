@@ -1,0 +1,78 @@
+name: CI Checks
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate resources, scope, manifest, and repository hygiene
+        run: |
+          python3 - <<'PY'
+          import pathlib, re, subprocess, sys, xml.etree.ElementTree as ET
+
+          en_path = pathlib.Path("S23_LSPosed_Module/app/src/main/res/values/strings.xml")
+          cs_path = pathlib.Path("S23_LSPosed_Module/app/src/main/res/values-cs/strings.xml")
+          en_root = ET.parse(en_path).getroot()
+          cs_root = ET.parse(cs_path).getroot()
+          en_map = {el.attrib["name"]: (el.text or "") for el in en_root.findall("string")}
+          cs_map = {el.attrib["name"]: (el.text or "") for el in cs_root.findall("string")}
+
+          missing = sorted(set(en_map) - set(cs_map))
+          extra = sorted(set(cs_map) - set(en_map))
+          if missing or extra:
+              print("Locale mismatch:", missing, extra)
+              sys.exit(1)
+
+          fmt = re.compile(r"%\d+\$[sd]|%%")
+          for k, v in en_map.items():
+              if sorted(fmt.findall(v)) != sorted(fmt.findall(cs_map[k])):
+                  print(f"Format mismatch for {k}")
+                  sys.exit(1)
+
+          scope_list = [
+              l.strip()
+              for l in pathlib.Path("S23_LSPosed_Module/app/src/main/resources/META-INF/xposed/scope.list")
+              .read_text(encoding="utf-8").splitlines()
+              if l.strip()
+          ]
+          arr_root = ET.parse("S23_LSPosed_Module/app/src/main/res/values/arrays.xml").getroot()
+          arrays = [item.text.strip() for item in arr_root.findall(".//item") if item.text]
+          if scope_list != arrays:
+              print("Scope mismatch:", scope_list, arrays)
+              sys.exit(1)
+
+          manifest = pathlib.Path("S23_LSPosed_Module/app/src/main/AndroidManifest.xml").read_text(encoding="utf-8")
+          if "PrefProvider" in manifest:
+              print("PrefProvider should not remain declared in AndroidManifest.xml")
+              sys.exit(1)
+
+          secret_rx = re.compile(r"\b(?:ghp_|gho_|github_pat_|AIza)[A-Za-z0-9_]{10,}")
+          ip_rx = re.compile(r"\b(?:100\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+)\b")
+          tracked = subprocess.check_output(["git", "ls-files"]).decode("utf-8").splitlines()
+          for f in tracked:
+              p = pathlib.Path(f)
+              if not p.is_file():
+                  continue
+              if p.suffix.lower() in {".jpg", ".png", ".apk", ".jar"}:
+                  continue
+              txt = p.read_text(encoding="utf-8", errors="ignore")
+              if secret_rx.search(txt):
+                  print(f"Possible token found in {p}")
+                  sys.exit(1)
+              if ip_rx.search(txt):
+                  print(f"Private IP found in {p}")
+                  sys.exit(1)
+
+          print(f"CI checks passed ({len(cs_map)} localized strings, {len(scope_list)} scope entries)")
+          PY

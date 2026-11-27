@@ -2,6 +2,27 @@
 
 All notable changes to **S23 Enhancer** are documented in this file.
 
+## [2.8] - 2026-11-27
+
+### Security
+- Removed the unauthenticated `RECEIVER_EXPORTED` `ACTION_RESTART_SYSTEMUI` broadcast receiver in [SystemUiHooks](S23_LSPosed_Module/app/src/main/java/com/s23/enhancements/SystemUiHooks.java); SystemUI restart triggers strictly via the `WRITE_SECURE_SETTINGS`-protected `Settings.Global` observer.
+- Enforced caller verification (`com.s23.enhancements`, `SYSTEM_UID`, `uid 0`) in [HookEntry](S23_LSPosed_Module/app/src/main/java/com/s23/enhancements/HookEntry.java)'s `ContentProvider.call` hook for `set_outdoor_mode`.
+- Removed the unused exported `PrefProvider` from `AndroidManifest.xml` and removed world-readable `shared_prefs` `setReadable(true, false)` calls.
+- Restricted [AppUpdater](S23_LSPosed_Module/app/src/main/java/com/s23/enhancements/AppUpdater.java) APK downloads and HTTP redirects to HTTPS GitHub domains (`isAllowedDownloadUrl`) and added `AtomicBoolean` guards against duplicate checks/downloads.
+- Added optional environment-variable release signing configuration (`RELEASE_STORE_FILE`, `RELEASE_STORE_PASSWORD`, `RELEASE_KEY_ALIAS`, `RELEASE_KEY_PASSWORD`) in `build.gradle.kts` with backward-compatible `debug.keystore` fallback.
+
+### Performance & Bug Fixes
+- Cached all [SystemUiHooks](S23_LSPosed_Module/app/src/main/java/com/s23/enhancements/SystemUiHooks.java) preferences in memory refreshed by a single `Settings.Global` `ContentObserver`, plus `WeakReference` view caches — eliminating per-frame Binder IPC and repeated `findViewById` walks inside `OnPreDrawListener`.
+- Hoisted camera `CaptureRequest.Key` constants, gated optical-fallback overrides behind `pref_camera_4k60_lenses`, cached `pref_camera_jpeg_100`, short-circuited `ClassLoader#loadClass` once `ComplicationWidgetSizeManager` is hooked, deduplicated `AppInfo` preference listener/logging, and fixed `getTimeoutDescription` overload handling in `HookEntry`.
+- Synced the Status Bar flashlight toggle with system torch state via `CameraManager.TorchCallback` in [StatusBarActions](S23_LSPosed_Module/app/src/main/java/com/s23/enhancements/StatusBarActions.java).
+- Updated [RecentsMenuHooks](S23_LSPosed_Module/app/src/main/java/com/s23/enhancements/RecentsMenuHooks.java) cache clearing to respect `UserHandle#myUserId` and replaced synchronous `sh -c` fallback in `MainActivity` with async `settings put` execution.
+- Updated `build_and_install.ps1` to fail fast on `adb install -r` errors.
+
+### Build, Tests & Hygiene
+- Enabled R8 code minification and resource shrinking ([proguard-rules.pro](S23_LSPosed_Module/app/proguard-rules.pro)), reducing release APK size from 15.5 MB to **3.23 MB** (~79% smaller).
+- Removed 11 dead pre-SESL9 Java classes, 7 unused drawables, unused colors, and 2 unused strings (`batt_cycles`, `toast_error`).
+- Added JVM unit tests ([ModuleLogicTest](S23_LSPosed_Module/app/src/test/java/com/s23/enhancements/ModuleLogicTest.java)) and a GitHub Actions validation workflow ([ci.yml](.github/workflows/ci.yml)), sanitized local paths/IPs in `NOTES.md`, and deduplicated `.gitignore`.
+
 ## [2.7] - 2026-11-27
 
 ### Added

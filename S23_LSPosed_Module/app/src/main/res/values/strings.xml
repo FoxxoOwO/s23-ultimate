@@ -62,7 +62,6 @@
     <string name="batt_current">Current</string>
     <string name="batt_power">Power</string>
     <string name="batt_charge">Charge counter</string>
-    <string name="batt_cycles">Cycle count</string>
     <string name="batt_tech">Technology</string>
     <string name="batt_protect">Battery protection</string>
     <string name="batt_status_charging">Charging</string>
@@ -127,7 +126,6 @@
     <string name="status_supported">Supported</string>
     <string name="status_test_device">Test device</string>
     <string name="toast_saved">Settings saved</string>
-    <string name="toast_error">Failed to apply setting: %1$s</string>
     <string name="toast_invalid_value">Enter a valid number</string>
     <string name="toast_screen_mode">Display profile: %1$s</string>
     <string name="toast_screen_timeout">Screen timeout: %1$s</string>

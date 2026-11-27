@@ -23,7 +23,6 @@ debug.keystore
 *.zip
 *.dex
 *.jar
-!libxposed-api-102.jar
 libxposed-api-102.aar
 *.so
 jadx_*/
@@ -53,7 +52,6 @@ services.jar
 *.xml
 !S23_LSPosed_Module/app/src/main/**/*.xml
 !S23_LSPosed_Module/app/src/main/res/**/*.xml
-oneui-design-ref/
 *.txt
 
 # Scratch scripts

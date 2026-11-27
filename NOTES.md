@@ -267,28 +267,25 @@ UI není postavené na XML+Spinner, ale na vlastních komponentách, které se c
 ## 5. Souborová struktura
 
 ```
-d:\repositories\s23ultimate\
-├── build_and_install.ps1             # Build & install skript (AAPT2 → javac → D8 → 7z → sign → adb)
+<repo-root>\
+├── build_and_install.ps1             # Build & install skript (Gradle -> ADB install)
 ├── debug.keystore                    # Vývojový podpisový klíč
 ├── libxposed-api-102.jar             # LibXposed compile-time knihovna
 ├── S23_LSPosed_Enhancer.apk          # Výsledná podepsaná APK
 ├── S23_Custom_Enhancer\              # Původní Magisk/KernelSU modul (historická reference)
 ├── oneui-design-ref\                 # OneUIProject/oneui-design (vizuální reference)
 └── S23_LSPosed_Module\app\src\main\
-    ├── AndroidManifest.xml           # Oprávnění, QS dlaždice, provider
+    ├── AndroidManifest.xml           # Oprávnění, QS dlaždice
     ├── java\com\s23\enhancements\
-    │   ├── HookEntry.java            # Všechny LSPosed hooky (1133 řádků)
-    │   ├── PrefProvider.java         # ContentProvider pro IPC sdílení voleb
-    │   ├── PreferencesHelper.java
+    │   ├── HookEntry.java            # Hlavní LSPosed hooky
     │   └── ui\
-    │       ├── MainActivity.java     # Obrazovka aplikace (sekce Fotoaparát/Displej/Systém)
+    │       ├── MainActivity.java     # Obrazovka aplikace (SESL9 PreferenceFragmentCompat)
     │       ├── OutdoorModeTileService.java
-    │       └── oneui\                # One UI komponentová vrstva (10 tříd, vč. OneUiInfoRow)
+    │       └── oneui\OneUiDialog.java
     ├── resources\META-INF\xposed\    # module.prop, scope.list, java_init.list
     └── res\
-        ├── drawable\                 # oneui_card_bg, oneui_card_hero_bg, oneui_dialog_bg, oneui_row_ripple, oneui_input_bg, oneui_status_*, ic_sun
-        ├── layout\                   # activity_main.xml (hlavička + hero karta; řádky se staví v kódu)
-        └── values\                   # colors.xml, strings.xml (čeština), styles.xml, arrays.xml
+        ├── layout\                   # activity_main.xml (AppBarLayout + FragmentContainerView)
+        └── values\                   # colors.xml, strings.xml, values-cs/strings.xml, styles.xml, arrays.xml
 ```
 
 ---
@@ -296,16 +293,16 @@ d:\repositories\s23ultimate\
 ## 6. Sestavení a nasazení
 
 ### Požadavky
-- Android SDK Build-Tools (skript bere nejnovější; ověřeno s `36.0.0`), `ANDROID_HOME` = `D:\Android\SDK`
-- JDK s podporou `--release 17`
-- 7-Zip (`C:\Program Files\7-Zip\7z.exe`)
+- Android SDK platforma `android-37` (`compileSdk = 37`), `ANDROID_HOME`
+- JDK 24+ (SESL9) a Gradle 9.x
+- `gh auth` / `GPR_TOKEN` pro stažení SESL9 balíčků
 - ADB + připojené zařízení
 
 ### Příkaz
 ```powershell
-powershell -ExecutionPolicy Bypass -File "d:\repositories\s23ultimate\build_and_install.ps1"
+powershell -ExecutionPolicy Bypass -File "<repo-root>\build_and_install.ps1"
 # pouze build bez instalace:
-powershell -ExecutionPolicy Bypass -File "d:\repositories\s23ultimate\build_and_install.ps1" -NoInstall
+powershell -ExecutionPolicy Bypass -File "<repo-root>\build_and_install.ps1" -NoInstall
 ```
 
 Skript: vyčistí `build_output` → `aapt2 compile/link` → `javac --release 17` → `d8 --min-api 31` → 7-Zip (DEX + `META-INF/xposed`) → `zipalign` → `apksigner` → `adb install -r` + `pm grant WRITE_SECURE_SETTINGS` + `appops set WRITE_SETTINGS allow`.
@@ -342,7 +339,7 @@ Skript: vyčistí `build_output` → `aapt2 compile/link` → `javac --release 1
 
 ## 9. Kandidáti na další odemčení (průzkum 2026-11-14, wireless ADB)
 
-Průzkum proběhl na živém zařízení přes `adb connect 192.168.0.139:38425`. Shell z ADB **není root** (`uid=2000(shell)`, `/system/bin/su` neexistuje, `/data/adb` = Permission denied) — KernelSU (`me.weishu.kernelsu`) je nainstalovaný, ale ADB shell nemá root práva. Vše níže je proto ověřené jen čtením props / `dumpsys` / `/optics` / `/vendor/etc`, ne zápisem.
+Průzkum proběhl na živém zařízení přes `adb connect <device-ip>:<port>`. Shell z ADB **není root** (`uid=2000(shell)`, `/system/bin/su` neexistuje, `/data/adb` = Permission denied) — KernelSU (`me.weishu.kernelsu`) je nainstalovaný, ale ADB shell nemá root práva. Vše níže je proto ověřené jen čtením props / `dumpsys` / `/optics` / `/vendor/etc`, ne zápisem.
 
 **Základní fakta o zařízení**
 

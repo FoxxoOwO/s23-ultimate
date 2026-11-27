@@ -62,7 +62,6 @@
     <string name="batt_current">Proud</string>
     <string name="batt_power">Výkon</string>
     <string name="batt_charge">Čítač nabití</string>
-    <string name="batt_cycles">Počet cyklů</string>
     <string name="batt_tech">Technologie</string>
     <string name="batt_protect">Ochrana baterie</string>
     <string name="batt_status_charging">Nabíjení</string>
@@ -127,7 +126,6 @@
     <string name="status_supported">Podporováno</string>
     <string name="status_test_device">Testovací zařízení</string>
     <string name="toast_saved">Nastavení uloženo</string>
-    <string name="toast_error">Nepodařilo se použít nastavení: %1$s</string>
     <string name="toast_invalid_value">Zadejte platné číslo</string>
     <string name="toast_screen_mode">Profil displeje: %1$s</string>
     <string name="toast_screen_timeout">Časový limit obrazovky: %1$s</string>

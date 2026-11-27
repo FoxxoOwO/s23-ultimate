@@ -1,15 +1,13 @@
 package com.s23.enhancements;
 
-import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.res.Resources;
 import android.database.ContentObserver;
 import android.graphics.Color;
 import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.net.TrafficStats;
+import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.PowerManager;
@@ -37,6 +35,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.WeakHashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 import io.github.libxposed.api.XposedInterface;
 
@@ -52,7 +51,7 @@ final class SystemUiHooks {
 
     private static final String TAG = "S23Enhancer";
     private static final String SYSUI_PKG = "com.android.systemui";
-    static final String ACTION_RESTART_SYSUI = "com.s23.enhancements.ACTION_RESTART_SYSTEMUI";
+    private static final String GLOBAL_PREFIX = "s23enh_";
     private static final String CMD_RESTART_SYSUI = "s23enh_cmd_restart_systemui";
 
     // Notification prefs
@@ -78,6 +77,7 @@ final class SystemUiHooks {
     private static final String PREF_SB_DOUBLE_TAP_SLEEP = "pref_sb_double_tap_sleep";
     private static final String PREF_SB_TAP_PREFIX = "pref_sb_tap_";
     private static final String PREF_SB_LONG_PREFIX = "pref_sb_long_";
+    private static final String[] ACTION_TARGETS = {"battery", "clock", "camera_hole", "wifi", "mobile"};
 
     private static final String TAG_BACK_BTN = "s23_sb_back_btn";
     private static final String TAG_NET_SPEED = "s23_sb_net_speed";
@@ -87,6 +87,29 @@ final class SystemUiHooks {
     private static boolean sInitDone;
     private static Context sAppCtx;
     private static HookEntry sModule;
+
+    // Cached preferences refreshed via Settings.Global ContentObserver (avoids per-frame IPC)
+    private static volatile boolean sCacheLoaded;
+    private static volatile int sPrefEdgeMode = 0;
+    private static volatile int sPrefEdgeDp = 4;
+    private static volatile int sPrefItemSpacing = -1;
+    private static volatile int sPrefMaxNotifIcons = 0;
+    private static volatile boolean sPrefOneConn = false;
+    private static volatile boolean sPrefBackBtn = false;
+    private static volatile boolean sPrefBurnIn = true;
+    private static volatile boolean sPrefNetSpeed = false;
+    private static volatile int sPrefNetSpeedMode = 0;
+    private static volatile boolean sPrefNetSpeedAutoHide = true;
+    private static volatile boolean sPrefTapVibrate = true;
+    private static volatile int sPrefTapVibrateStrength = 1;
+    private static volatile boolean sPrefDoubleTapSleep = false;
+    private static final ConcurrentHashMap<String, String> sPrefActions = new ConcurrentHashMap<>();
+
+    // Cached status bar child views
+    private static WeakReference<View> sSystemIconsRef = new WeakReference<>(null);
+    private static WeakReference<View> sRightClockRef = new WeakReference<>(null);
+    private static WeakReference<View> sWifiRef = new WeakReference<>(null);
+    private static WeakReference<View> sNotifIconsRef = new WeakReference<>(null);
 
     // Resource IDs resolved once from com.android.systemui
     private static int sClockId;
@@ -319,7 +342,7 @@ final class SystemUiHooks {
             module.hook(getInt).intercept(chain -> {
                 Object res = chain.proceed();
                 try {
-                    int want = module.getIntPref(PREF_SB_MAX_NOTIF_ICONS, 0);
+                    int want = maxNotifIcons(module);
                     if (want <= 0) return res;
                     Resources r = (Resources) chain.getThisObject();
                     if (sIdMaxNotifStatic == -2) {
@@ -360,7 +383,7 @@ final class SystemUiHooks {
                 });
             }
             module.hookAllMethods(nicCls, "shouldForceOverflow", chain -> {
-                int want = module.getIntPref(PREF_SB_MAX_NOTIF_ICONS, 0);
+                int want = maxNotifIcons(module);
                 if (want <= 0) return chain.proceed();
                 Object[] args = chain.getArgs().toArray();
                 if (args.length > 0 && args[args.length - 1] instanceof Integer) {
@@ -379,7 +402,7 @@ final class SystemUiHooks {
                     "com.android.systemui.statusbar.notification.icon.ui.viewmodel.NotificationIconContainerStatusBarViewModel");
             module.hookConstructors(vmCls, chain -> {
                 Object res = chain.proceed();
-                if (module.getIntPref(PREF_SB_MAX_NOTIF_ICONS, 0) > 0) {
+                if (maxNotifIcons(module) > 0) {
                     setFieldInt(chain.getThisObject(), "maxIcons", Integer.MAX_VALUE);
                 }
                 return res;
@@ -401,7 +424,7 @@ final class SystemUiHooks {
                         module.hook(m).intercept(chain -> {
                             Object res = chain.proceed();
                             if (chain.getThisObject() instanceof View) {
-                                int dp = module.getIntPref(PREF_SB_ITEM_SPACING, -1);
+                                int dp = itemSpacingDp(module);
                                 if (dp >= 0) {
                                     float d = ((View) chain.getThisObject()).getResources().getDisplayMetrics().density;
                                     setFieldInt(chain.getThisObject(), "mIconSpacing", Math.round(dp * d));
@@ -423,7 +446,7 @@ final class SystemUiHooks {
         try {
             Class<?> cls = cl.loadClass("com.android.systemui.statusbar.phone.IndicatorMarqueeGardener");
             module.hookAllMethods(cls, "updateMarqueeValues", chain -> {
-                if (!module.isPref(PREF_SB_BURN_IN, true)) return null;
+                if (!burnInEnabled(module)) return null;
                 return chain.proceed();
             });
             Log.i(TAG, "Hooked IndicatorMarqueeGardener");
@@ -485,14 +508,64 @@ final class SystemUiHooks {
         sStatusIconsId = res.getIdentifier("statusIcons", "id", SYSUI_PKG);
         sNotifIconsId = res.getIdentifier("notificationIcons", "id", SYSUI_PKG);
 
+        refreshPrefCache(sModule);
         registerRestartTriggers(sAppCtx);
         startShiftLoop();
-        int maxNotif = sModule != null ? sModule.getIntPref(PREF_SB_MAX_NOTIF_ICONS, 0) : -1;
-        String tapBat = sModule != null ? sModule.getStringPref(PREF_SB_TAP_PREFIX + "battery", "none") : "?";
         Log.i(TAG, "SystemUiHooks initialized: clockId=" + sClockId
                 + " systemIconsId=" + sSystemIconsId + " contentsId=" + sStatusContentsId
                 + " notifIconsId=" + sNotifIconsId + " batCompId=" + sBatteryComposableId
-                + " maxNotif=" + maxNotif + " tapBattery=" + tapBat);
+                + " maxNotif=" + sPrefMaxNotifIcons
+                + " tapBattery=" + actionPref(PREF_SB_TAP_PREFIX, "battery"));
+    }
+
+    private static void ensureCache(HookEntry mod) {
+        if (!sCacheLoaded && mod != null) {
+            refreshPrefCache(mod);
+        }
+    }
+
+    private static void refreshPrefCache(HookEntry mod) {
+        if (mod == null) return;
+        sPrefEdgeMode = mod.getIntPref(PREF_SB_EDGE_MODE, 0);
+        sPrefEdgeDp = mod.getIntPref(PREF_SB_EDGE_DP, 4);
+        sPrefItemSpacing = mod.getIntPref(PREF_SB_ITEM_SPACING, -1);
+        sPrefMaxNotifIcons = mod.getIntPref(PREF_SB_MAX_NOTIF_ICONS, 0);
+        sPrefOneConn = mod.isPref(PREF_SB_ONE_CONN_ICON, false);
+        sPrefBackBtn = mod.isPref(PREF_SB_BACK_BUTTON, false);
+        sPrefBurnIn = mod.isPref(PREF_SB_BURN_IN, true);
+        sPrefNetSpeed = mod.isPref(PREF_SB_NET_SPEED, false);
+        sPrefNetSpeedMode = mod.getIntPref(PREF_SB_NET_SPEED_MODE, 0);
+        sPrefNetSpeedAutoHide = mod.isPref(PREF_SB_NET_SPEED_AUTO_HIDE, true);
+        sPrefTapVibrate = mod.isPref(PREF_SB_TAP_VIBRATE, true);
+        sPrefTapVibrateStrength = mod.getIntPref(PREF_SB_TAP_VIBRATE_STRENGTH, 1);
+        sPrefDoubleTapSleep = mod.isPref(PREF_SB_DOUBLE_TAP_SLEEP, false);
+        for (String target : ACTION_TARGETS) {
+            String tapKey = PREF_SB_TAP_PREFIX + target;
+            String longKey = PREF_SB_LONG_PREFIX + target;
+            sPrefActions.put(tapKey, mod.getStringPref(tapKey, StatusBarActions.ACTION_NONE));
+            sPrefActions.put(longKey, mod.getStringPref(longKey, StatusBarActions.ACTION_NONE));
+        }
+        sCacheLoaded = true;
+    }
+
+    private static int maxNotifIcons(HookEntry mod) {
+        ensureCache(mod);
+        return sPrefMaxNotifIcons;
+    }
+
+    private static int itemSpacingDp(HookEntry mod) {
+        ensureCache(mod);
+        return sPrefItemSpacing;
+    }
+
+    private static boolean burnInEnabled(HookEntry mod) {
+        ensureCache(mod);
+        return sPrefBurnIn;
+    }
+
+    private static String actionPref(String prefix, String target) {
+        String val = sPrefActions.get(prefix + target);
+        return val != null ? val : StatusBarActions.ACTION_NONE;
     }
 
     private static void onTextViewAttached(TextView tv) {
@@ -584,12 +657,12 @@ final class SystemUiHooks {
             }
         }
 
-        applyEdgeSpacing(mod, root);
-        applyClockRowGap(mod, root);
+        applyEdgeSpacing(root);
+        applyClockRowGap(root);
         applyOneConnectionIcon(mod, root);
-        syncNotifIconsMax(mod, root);
-        syncBackButton(mod, clock);
-        syncNetSpeed(mod, root, clock);
+        syncNotifIconsMax(root);
+        syncBackButton(clock);
+        syncNetSpeed(root, clock);
     }
 
     private static void applyMaxIconsToContainer(HookEntry module, Object container) {
@@ -601,7 +674,7 @@ final class SystemUiHooks {
             if (nicId != 0) sNotifIconsId = nicId;
         }
         if (nicId == 0 || v.getId() != nicId) return;
-        int want = module.getIntPref(PREF_SB_MAX_NOTIF_ICONS, 0);
+        int want = maxNotifIcons(module);
         if (want <= 0) return;
         try {
             if (fNicMaxIcons.getInt(v) != want) {
@@ -611,11 +684,15 @@ final class SystemUiHooks {
         }
     }
 
-    private static void syncNotifIconsMax(HookEntry mod, View root) {
+    private static void syncNotifIconsMax(View root) {
         if (sNotifIconsId == 0 || fNicMaxIcons == null) return;
-        int want = mod.getIntPref(PREF_SB_MAX_NOTIF_ICONS, 0);
+        int want = sPrefMaxNotifIcons;
         if (want <= 0) return;
-        View nic = root.findViewById(sNotifIconsId);
+        View nic = sNotifIconsRef.get();
+        if (nic == null || !nic.isAttachedToWindow() || nic.getRootView() != root) {
+            nic = root.findViewById(sNotifIconsId);
+            sNotifIconsRef = new WeakReference<>(nic);
+        }
         if (nic == null) return;
         try {
             if (fNicMaxIcons.getInt(nic) != want) {
@@ -626,19 +703,19 @@ final class SystemUiHooks {
         }
     }
 
-    private static void applyEdgeSpacing(HookEntry mod, View root) {
+    private static void applyEdgeSpacing(View root) {
         if (sStatusContentsId == 0) return;
         View v = sPadView.get();
-        if (v == null || !v.isAttachedToWindow()) {
+        if (v == null || !v.isAttachedToWindow() || v.getRootView() != root) {
             v = root.findViewById(sStatusContentsId);
             sPadView = new WeakReference<>(v);
             sOrigPad = null;
         }
         if (v == null) return;
 
-        int mode = mod.getIntPref(PREF_SB_EDGE_MODE, 0);
+        int mode = sPrefEdgeMode;
         if (mode != 0) {
-            int dp = (mode == 1) ? 4 : Math.max(0, Math.min(32, mod.getIntPref(PREF_SB_EDGE_DP, 4)));
+            int dp = (mode == 1) ? 4 : Math.max(0, Math.min(32, sPrefEdgeDp));
             if (sOrigPad == null) {
                 sOrigPad = new int[]{v.getPaddingLeft(), v.getPaddingRight()};
             }
@@ -654,13 +731,17 @@ final class SystemUiHooks {
         }
     }
 
-    private static void applyClockRowGap(HookEntry mod, View root) {
+    private static void applyClockRowGap(View root) {
         if (sRightClockContainerId == 0) return;
-        View v = root.findViewById(sRightClockContainerId);
+        View v = sRightClockRef.get();
+        if (v == null || !v.isAttachedToWindow() || v.getRootView() != root) {
+            v = root.findViewById(sRightClockContainerId);
+            sRightClockRef = new WeakReference<>(v);
+        }
         if (v == null || !(v.getLayoutParams() instanceof ViewGroup.MarginLayoutParams)) return;
         ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) v.getLayoutParams();
         int[] orig = sOrigItemGap.get(v);
-        int gapDp = mod.getIntPref(PREF_SB_ITEM_SPACING, -1);
+        int gapDp = sPrefItemSpacing;
         if (gapDp < 0) {
             if (orig != null) {
                 sOrigItemGap.remove(v);
@@ -683,7 +764,7 @@ final class SystemUiHooks {
     private static void applyOneConnectionIcon(HookEntry mod, View root) {
         if (sMobileSignalId == 0 || sStatusIconsId == 0 || sWifiSignalId == 0) return;
         View box = sMobileBox.get();
-        if (box == null || !box.isAttachedToWindow()) {
+        if (box == null || !box.isAttachedToWindow() || box.getRootView() != root) {
             View m = root.findViewById(sMobileSignalId);
             View row = root.findViewById(sStatusIconsId);
             box = null;
@@ -699,9 +780,13 @@ final class SystemUiHooks {
         }
         if (box == null) return;
 
-        View wifi = root.findViewById(sWifiSignalId);
+        View wifi = sWifiRef.get();
+        if (wifi == null || !wifi.isAttachedToWindow() || wifi.getRootView() != root) {
+            wifi = root.findViewById(sWifiSignalId);
+            sWifiRef = new WeakReference<>(wifi);
+        }
         boolean wifiUp = wifi != null && wifi.isShown() && wifi.getWidth() > 0;
-        boolean wantMerge = mod.isPref(PREF_SB_ONE_CONN_ICON, false);
+        boolean wantMerge = sPrefOneConn;
 
         if (wantMerge && wifiUp) {
             if (hookMobileBox(mod, box)) {
@@ -761,8 +846,8 @@ final class SystemUiHooks {
         }
     }
 
-    private static void syncBackButton(HookEntry mod, TextView clock) {
-        boolean want = mod.isPref(PREF_SB_BACK_BUTTON, false);
+    private static void syncBackButton(TextView clock) {
+        boolean want = sPrefBackBtn;
         if (!(clock.getParent() instanceof LinearLayout)) return;
         LinearLayout parent = (LinearLayout) clock.getParent();
 
@@ -807,11 +892,15 @@ final class SystemUiHooks {
 
     // ------------------------------------------------------------------ Network Speed Meter
 
-    private static void syncNetSpeed(HookEntry mod, View root, TextView clock) {
-        boolean want = mod.isPref(PREF_SB_NET_SPEED, false);
+    private static void syncNetSpeed(View root, TextView clock) {
+        boolean want = sPrefNetSpeed;
         LinearLayout parent = null;
         boolean inSystemIcons = false;
-        View si = sSystemIconsId != 0 ? root.findViewById(sSystemIconsId) : null;
+        View si = sSystemIconsRef.get();
+        if (si == null || !si.isAttachedToWindow() || si.getRootView() != root) {
+            si = sSystemIconsId != 0 ? root.findViewById(sSystemIconsId) : null;
+            sSystemIconsRef = new WeakReference<>(si);
+        }
         if (si instanceof LinearLayout) {
             parent = (LinearLayout) si;
             inSystemIcons = true;
@@ -865,7 +954,7 @@ final class SystemUiHooks {
             sNetSpeedView.setTextColor(color);
         }
 
-        int mode = mod.getIntPref(PREF_SB_NET_SPEED_MODE, 0);
+        int mode = sPrefNetSpeedMode;
         if (mode != sNetSpeedLastMode) {
             if (mode == 1) {
                 sNetSpeedView.setSingleLine(false);
@@ -914,9 +1003,8 @@ final class SystemUiHooks {
     }
 
     private static long updateNetSpeedOnce() {
-        HookEntry mod = sModule;
         TextView tv = sNetSpeedView;
-        if (mod == null || !mod.isPref(PREF_SB_NET_SPEED, false)) {
+        if (!sPrefNetSpeed) {
             stopNetSpeedLoop();
             if (tv != null && tv.getVisibility() != View.GONE) {
                 tv.setVisibility(View.GONE);
@@ -941,10 +1029,10 @@ final class SystemUiHooks {
             sLastNetRx = rx;
             sLastNetTx = tx;
             sLastNetTimeMs = now;
-            if (mod.isPref(PREF_SB_NET_SPEED_AUTO_HIDE, true)) {
+            if (sPrefNetSpeedAutoHide) {
                 if (tv.getVisibility() != View.GONE) tv.setVisibility(View.GONE);
             } else {
-                int mode = mod.getIntPref(PREF_SB_NET_SPEED_MODE, 0);
+                int mode = sPrefNetSpeedMode;
                 tv.setText(mode == 1 ? "\u21930B\n\u21910B" : "0 B/s");
                 if (tv.getVisibility() != View.VISIBLE) tv.setVisibility(View.VISIBLE);
             }
@@ -958,8 +1046,8 @@ final class SystemUiHooks {
         sLastNetTx = tx;
         sLastNetTimeMs = now;
 
-        int mode = mod.getIntPref(PREF_SB_NET_SPEED_MODE, 0);
-        boolean autoHide = mod.isPref(PREF_SB_NET_SPEED_AUTO_HIDE, true);
+        int mode = sPrefNetSpeedMode;
+        boolean autoHide = sPrefNetSpeedAutoHide;
         long activeBps = (mode == 2) ? rxBps : (rxBps + txBps);
 
         if (autoHide && activeBps < 1024L) {
@@ -983,7 +1071,7 @@ final class SystemUiHooks {
         return 1000L;
     }
 
-    private static String formatSpeed(long bps, boolean compact) {
+    static String formatSpeed(long bps, boolean compact) {
         if (bps < 1024L) {
             return compact ? (bps + "B") : (bps + " B/s");
         }
@@ -1009,9 +1097,7 @@ final class SystemUiHooks {
             @Override
             public void run() {
                 MAIN.removeCallbacks(this);
-                HookEntry mod = sModule;
-                if (mod == null) return;
-                boolean on = mod.isPref(PREF_SB_BURN_IN, true) && isInteractive();
+                boolean on = burnInEnabled(sModule) && isInteractive();
                 applyPixelShift(on);
                 MAIN.postDelayed(this, 120_000L);
             }
@@ -1127,8 +1213,8 @@ final class SystemUiHooks {
 
                 sDownTarget = hitTestTarget(root, sDownX, sDownY);
                 if (!"empty".equals(sDownTarget)) {
-                    String longAct = mod.getStringPref(PREF_SB_LONG_PREFIX + sDownTarget, StatusBarActions.ACTION_NONE);
-                    if (longAct != null && !StatusBarActions.ACTION_NONE.equals(longAct)) {
+                    String longAct = actionPref(PREF_SB_LONG_PREFIX, sDownTarget);
+                    if (!StatusBarActions.ACTION_NONE.equals(longAct)) {
                         final String act = longAct;
                         final String tgt = sDownTarget;
                         sLongPressTask = () -> {
@@ -1136,14 +1222,14 @@ final class SystemUiHooks {
                             if (!sMoved) {
                                 sLongFired = true;
                                 Log.i(TAG, "StatusBar long-press target=" + tgt + " action=" + act);
-                                haptic(mod, root, ctx, true);
+                                haptic(root, ctx, true);
                                 StatusBarActions.execute(ctx, act);
                             }
                         };
                         MAIN.postDelayed(sLongPressTask, ViewConfiguration.getLongPressTimeout());
                     }
                 } else {
-                    sTouchBg = mod.isPref(PREF_SB_DOUBLE_TAP_SLEEP, false);
+                    sTouchBg = sPrefDoubleTapSleep;
                 }
             } else if (action == MotionEvent.ACTION_MOVE) {
                 if (!sMoved && (Math.abs(e.getRawX() - sDownX) > slop || Math.abs(e.getRawY() - sDownY) > slop)) {
@@ -1161,13 +1247,13 @@ final class SystemUiHooks {
                 if (!sMoved && !sLongFired) {
                     if (sTouchBack) {
                         Log.i(TAG, "StatusBar gesture target=back action=back");
-                        haptic(mod, root, ctx, false);
+                        haptic(root, ctx, false);
                         StatusBarActions.execute(ctx, StatusBarActions.ACTION_BACK);
                     } else if (!"empty".equals(sDownTarget)) {
-                        String tapAct = mod.getStringPref(PREF_SB_TAP_PREFIX + sDownTarget, StatusBarActions.ACTION_NONE);
-                        if (tapAct != null && !StatusBarActions.ACTION_NONE.equals(tapAct)) {
+                        String tapAct = actionPref(PREF_SB_TAP_PREFIX, sDownTarget);
+                        if (!StatusBarActions.ACTION_NONE.equals(tapAct)) {
                             Log.i(TAG, "StatusBar gesture target=" + sDownTarget + " action=" + tapAct);
-                            haptic(mod, root, ctx, false);
+                            haptic(root, ctx, false);
                             StatusBarActions.execute(ctx, tapAct);
                         }
                     } else if (sTouchBg && (e.getEventTime() - e.getDownTime() < 350L)) {
@@ -1177,7 +1263,7 @@ final class SystemUiHooks {
                                 && Math.abs(e.getRawX() - sLastBgX) < dtSlop * 3f) {
                             sLastBgTapMs = 0L;
                             Log.i(TAG, "StatusBar gesture target=empty action=sleep");
-                            haptic(mod, root, ctx, false);
+                            haptic(root, ctx, false);
                             StatusBarActions.execute(ctx, StatusBarActions.ACTION_SLEEP);
                         } else {
                             sLastBgTapMs = now;
@@ -1193,12 +1279,12 @@ final class SystemUiHooks {
         }
     }
 
-    private static void haptic(HookEntry mod, View v, Context ctx, boolean isLong) {
+    private static void haptic(View v, Context ctx, boolean isLong) {
         StatusBarActions.performHaptic(
                 v,
                 ctx,
-                mod.isPref(PREF_SB_TAP_VIBRATE, true),
-                mod.getIntPref(PREF_SB_TAP_VIBRATE_STRENGTH, 1),
+                sPrefTapVibrate,
+                sPrefTapVibrateStrength,
                 isLong);
     }
 
@@ -1276,20 +1362,30 @@ final class SystemUiHooks {
         return false;
     }
 
-    // ------------------------------------------------------------------ 7. Restart Triggers
+    // ------------------------------------------------------------------ 7. Restart & Pref Observers
 
     private static void registerRestartTriggers(Context ctx) {
         try {
-            BroadcastReceiver rx = new BroadcastReceiver() {
-                @Override
-                public void onReceive(Context c, Intent i) {
-                    Log.i(TAG, "Restarting SystemUI via broadcast");
-                    MAIN.postDelayed(() -> android.os.Process.killProcess(android.os.Process.myPid()), 200L);
-                }
-            };
-            ctx.registerReceiver(rx, new IntentFilter(ACTION_RESTART_SYSUI), Context.RECEIVER_EXPORTED);
+            ctx.getContentResolver().registerContentObserver(
+                    Settings.Global.CONTENT_URI,
+                    true,
+                    new ContentObserver(MAIN) {
+                        @Override
+                        public void onChange(boolean selfChange, Uri uri) {
+                            if (uri != null) {
+                                String seg = uri.getLastPathSegment();
+                                if (seg != null && !seg.isEmpty()
+                                        && !"global".equals(seg)
+                                        && !seg.startsWith(GLOBAL_PREFIX)) {
+                                    return;
+                                }
+                            }
+                            refreshPrefCache(sModule);
+                            syncStatusBar();
+                        }
+                    });
         } catch (Throwable t) {
-            Log.w(TAG, "Broadcast restart receiver failed: " + t.getMessage());
+            Log.w(TAG, "Settings.Global pref observer failed: " + t.getMessage());
         }
 
         try {

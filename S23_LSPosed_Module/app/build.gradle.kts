@@ -10,8 +10,8 @@ android {
         applicationId = "com.s23.enhancements"
         minSdk = 30
         targetSdk = 35
-        versionCode = 27
-        versionName = "2.7"
+        versionCode = 28
+        versionName = "2.8"
     }
 
     compileOptions {
@@ -19,18 +19,28 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
+
     signingConfigs {
         create("release") {
-            storeFile = file("../../debug.keystore")
-            storePassword = "android"
-            keyAlias = "debug"
-            keyPassword = "android"
+            val envStore = System.getenv("RELEASE_STORE_FILE")?.takeIf { it.isNotBlank() }
+            storeFile = file(envStore ?: "../../debug.keystore")
+            storePassword = System.getenv("RELEASE_STORE_PASSWORD") ?: "android"
+            keyAlias = System.getenv("RELEASE_KEY_ALIAS") ?: "debug"
+            keyPassword = System.getenv("RELEASE_KEY_PASSWORD") ?: "android"
         }
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
             signingConfig = signingConfigs.getByName("release")
         }
     }
@@ -64,6 +74,7 @@ configurations.configureEach {
 
 dependencies {
     compileOnly(files("../../libxposed-api-102.jar"))
+    testImplementation("junit:junit:4.13.2")
 
     implementation("sesl.androidx.core:core:1.19.0+1.0.29-sesl9+rev6")
     implementation("sesl.androidx.appcompat:appcompat:1.8.0+1.0.38-sesl9+rev8")
