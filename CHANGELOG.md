@@ -8,7 +8,7 @@ All notable changes to **S23 Enhancer** are documented in this file.
 - **Battery pill width** (`pref_sb_battery_pill_width`) is now applied in `com.android.systemui.battery.SamsungBatteryMeasurePolicy#measure-3p2s80s` instead of the `BatteryLayoutState` constructor, so the value is recomputed on every layout instead of being frozen at the first composition. The original width is cached per layout state in a `WeakHashMap`, so repeated measures never shrink the pill twice.
 - The shrink range now scales with the space Samsung actually reserves: `target = original - (original - min) * value / 100`, where `min = iconWidthPx + totalHeightPx` keeps the icon and both rounded ends. `0 %` still equals Samsung's default layout, and the pill can no longer collapse into a circle.
 - Removed the `SamsungBatteryMeterDrawable#shouldShowPercentageIcon` override. It made One UI draw the battery as a plain circle whenever the percentage was hidden, which is why the pill sometimes lost its shape.
-- The companion app writes `s23enh_cmd_restart_systemui` after the hide-percentage toggle or a pill-width change, because Compose does not remeasure the status bar on a preference write alone.
+- The companion app writes `s23enh_cmd_restart_systemui` after a pill-width change, because Compose does not remeasure the status bar on a preference write alone. The hide-percentage toggle leaves the restart to the user, as its row already says one is required.
 
 ### Changed
 - **Status Bar → Restart SystemUI** now states that the restart needs root access granted to S23 Enhancer, both in the row summary and in the confirmation dialog.

@@ -224,9 +224,9 @@ public class MainActivity extends AppCompatActivity {
         AppUpdater.checkOnStartup(this, mPrefs);
     }
 
-    // SystemUI only remeasures the battery on restart, so battery prefs need a nudge
+    // SystemUI only remeasures the battery on restart, so the width needs a nudge
     private void nudgeSystemUiIfBattery(String key) {
-        if (!KEY_SB_HIDE_BATTERY_PCT.equals(key) && !KEY_SB_PILL_WIDTH.equals(key)) return;
+        if (!KEY_SB_PILL_WIDTH.equals(key)) return;
         try {
             Settings.Global.putLong(getContentResolver(), "s23enh_cmd_restart_systemui",
                     System.currentTimeMillis());
@@ -451,7 +451,6 @@ public class MainActivity extends AppCompatActivity {
                 boolean checked = Boolean.TRUE.equals(newVal);
                 prefs().edit().putBoolean(key, checked).apply();
                 host().mirrorToGlobal(key, checked);
-                host().nudgeSystemUiIfBattery(key);
                 syncDependencies();
                 toast(getString(R.string.toast_saved));
                 return true;
