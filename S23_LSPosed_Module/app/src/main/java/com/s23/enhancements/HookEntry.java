@@ -48,6 +48,11 @@ public class HookEntry extends XposedModule {
     /** Settings App Info: inject Package name (tap to copy) and Install/Update date rows. */
     private static final String PREF_APP_INFO_DETAILS = "pref_system_app_info_details";
 
+    /** Settings Fingerprints: keep "Improve accuracy" (R.id.update) in fingerprint option popup. */
+    private static final String PREF_FP_IMPROVE_ACCURACY = "pref_system_fp_improve_accuracy";
+    private static final ThreadLocal<Boolean> sInFpOptionMenu = new ThreadLocal<>();
+    private volatile int mFpUpdateMenuId = -1;
+
     /** Lock screen: max ComplicationWidget grid rows (0 = Samsung default 1 row, 2-3 = expanded). */
     private static final String PREF_LOCKSCREEN_WIDGET_ROWS = "pref_lockscreen_widget_rows";
     private static final String COMPLICATION_SIZE_MANAGER_CLASS =
@@ -1203,6 +1208,78 @@ public class HookEntry extends XposedModule {
         } catch (Throwable ignored) {}
 
         hookAppInfoDetails(cl);
+        hookFingerprintImproveAccuracy(cl);
+    }
+
+    /**
+     * Settings -> Security and privacy -> Fingerprints: keeps "Improve accuracy" (R.id.update)
+     * in each fingerprint's popup menu (stock Settings hides it when DEVICE_INITIAL_SDK_INT < 36).
+     */
+    private void hookFingerprintImproveAccuracy(ClassLoader cl) {
+        try {
+            Class<?> fpSettingsCls = cl.loadClass(
+                    "com.samsung.android.settings.biometrics.fingerprint.FingerprintSettings");
+            Class<?> menuBuilderCls = cl.loadClass("androidx.appcompat.view.menu.MenuBuilder");
+
+            hookAllMethods(fpSettingsCls, "onPreferenceTreeClick", chain -> {
+                if (mFpUpdateMenuId <= 0) {
+                    Object ctxObj = invokeMethod(chain.getThisObject(), "getContext");
+                    if (ctxObj instanceof Context) {
+                        resolveFpUpdateMenuId((Context) ctxObj);
+                    }
+                }
+                sInFpOptionMenu.set(Boolean.TRUE);
+                try {
+                    return chain.proceed();
+                } finally {
+                    sInFpOptionMenu.remove();
+                }
+            });
+
+            Method removeItem = menuBuilderCls.getDeclaredMethod("removeItem", int.class);
+            hook(removeItem).intercept(chain -> {
+                if (Boolean.TRUE.equals(sInFpOptionMenu.get())
+                        && isPref(PREF_FP_IMPROVE_ACCURACY, true)
+                        && !chain.getArgs().isEmpty()
+                        && chain.getArg(0) instanceof Integer) {
+                    int id = (Integer) chain.getArg(0);
+                    Object mCtxObj = getFieldValue(chain.getThisObject(), "mContext");
+                    Context ctx = mCtxObj instanceof Context ? (Context) mCtxObj : null;
+                    int updateId = mFpUpdateMenuId;
+                    if (updateId <= 0 && ctx != null) {
+                        updateId = resolveFpUpdateMenuId(ctx);
+                    }
+                    boolean isUpdateItem = (updateId > 0 && id == updateId);
+                    if (!isUpdateItem && ctx != null) {
+                        try {
+                            isUpdateItem = "update".equals(ctx.getResources().getResourceEntryName(id));
+                        } catch (Throwable ignored) {
+                        }
+                    }
+                    if (isUpdateItem) {
+                        Log.i(TAG, "Unlocked Fingerprint Improve accuracy option (kept menu id=0x"
+                                + Integer.toHexString(id) + ")");
+                        return null;
+                    }
+                }
+                return chain.proceed();
+            });
+            Log.i(TAG, "Hooked FingerprintSettings + MenuBuilder for Improve accuracy");
+        } catch (Throwable t) {
+            Log.w(TAG, "Failed to hook FingerprintSettings Improve accuracy: " + t.getMessage());
+        }
+    }
+
+    private int resolveFpUpdateMenuId(Context ctx) {
+        if (ctx == null) return 0;
+        int resolved = ctx.getResources().getIdentifier("update", "id", ctx.getPackageName());
+        if (resolved == 0) {
+            resolved = ctx.getResources().getIdentifier("update", "id", "com.android.settings");
+        }
+        if (resolved > 0) {
+            mFpUpdateMenuId = resolved;
+        }
+        return resolved;
     }
 
     /**

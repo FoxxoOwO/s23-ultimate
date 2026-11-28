@@ -67,6 +67,7 @@ public class MainActivity extends AppCompatActivity {
     public static final String KEY_SYSTEM_FLAG_SECURE = "pref_system_disable_flag_secure";
     public static final String KEY_SYSTEM_TELEMETRY = "pref_system_disable_telemetry";
     public static final String KEY_SYSTEM_APP_INFO_DETAILS = "pref_system_app_info_details";
+    public static final String KEY_SYSTEM_FP_IMPROVE_ACCURACY = "pref_system_fp_improve_accuracy";
     public static final String KEY_AUTO_UPDATE = "pref_app_auto_update";
 
     // Battery
@@ -166,6 +167,7 @@ public class MainActivity extends AppCompatActivity {
             KEY_RECENTS_FORCE_STOP, KEY_RECENTS_RESTART, KEY_RECENTS_CLEAR_CACHE, KEY_RECENTS_SCREENSHOT,
             KEY_SYSTEM_CALL_RECORDING, KEY_SYSTEM_WIFI_PASSWORDS,
             KEY_SYSTEM_FLAG_SECURE, KEY_SYSTEM_TELEMETRY, KEY_SYSTEM_APP_INFO_DETAILS,
+            KEY_SYSTEM_FP_IMPROVE_ACCURACY,
             KEY_BATTERY_INFO,
             KEY_SB_ONE_CONN_ICON, KEY_SB_BACK_BUTTON, KEY_SB_BURN_IN,
             KEY_SB_NET_SPEED, KEY_SB_NET_SPEED_AUTO_HIDE,
@@ -651,6 +653,7 @@ public class MainActivity extends AppCompatActivity {
             switchPref(cat, ctx, KEY_SYSTEM_FLAG_SECURE, R.string.title_flag_secure, R.string.desc_flag_secure, true);
             switchPref(cat, ctx, KEY_SYSTEM_TELEMETRY, R.string.title_telemetry, R.string.desc_telemetry, true);
             switchPref(cat, ctx, KEY_SYSTEM_APP_INFO_DETAILS, R.string.title_app_info_details, R.string.desc_app_info_details, true);
+            switchPref(cat, ctx, KEY_SYSTEM_FP_IMPROVE_ACCURACY, R.string.title_fp_improve_accuracy, R.string.desc_fp_improve_accuracy, true);
 
             switchPref(cat, ctx, KEY_AUTO_UPDATE, R.string.title_auto_update, R.string.desc_auto_update, true);
 

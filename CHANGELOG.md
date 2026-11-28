@@ -2,6 +2,14 @@
 
 All notable changes to **S23 Enhancer** are documented in this file.
 
+## [2.9] - 2026-11-28
+
+### Added
+- **Settings → Improve fingerprint accuracy** (`pref_system_fp_improve_accuracy`, [HookEntry#hookFingerprintImproveAccuracy](S23_LSPosed_Module/app/src/main/java/com/s23/enhancements/HookEntry.java)):
+  - Unlocks the Galaxy S26 / One UI 8.5–9 **Improve accuracy** option in each registered fingerprint's popup menu (*Settings → Security and privacy → Screen lock and biometrics → Fingerprints → select a fingerprint → Improve accuracy*, 10 additional scans to improve recognition with screen protectors).
+  - Intercepts `FingerprintSettings#onPreferenceTreeClick` and `MenuBuilder#removeItem` to keep `R.id.update` (bypassing stock Settings' `Build.VERSION.DEVICE_INITIAL_SDK_INT < 36` check) and launches One UI's built-in `BiometricSetting` `FingerprintUpdateActivity`.
+  - Added toggle in the **System** section of [MainActivity](S23_LSPosed_Module/app/src/main/java/com/s23/enhancements/ui/MainActivity.java) with full English and Czech (`values-cs`) localization.
+
 ## [2.8] - 2026-11-27
 
 ### Security

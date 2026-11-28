@@ -49,6 +49,8 @@
     <string name="desc_telemetry">Stops crash log uploads and system diagnostic reporting.</string>
     <string name="title_app_info_details">App info package &amp; install date</string>
     <string name="desc_app_info_details">Shows package name (tap to copy) and install/update date in Settings &gt; Apps &gt; App info.</string>
+    <string name="title_fp_improve_accuracy">Improve fingerprint accuracy</string>
+    <string name="desc_fp_improve_accuracy">Unlocks the Improve accuracy option in Settings &gt; Security and privacy &gt; Fingerprints (10 extra scans to improve recognition with a screen protector).</string>
 
     <!-- Battery -->
     <string name="sec_battery">Battery</string>

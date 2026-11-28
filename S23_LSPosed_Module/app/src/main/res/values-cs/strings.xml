@@ -49,6 +49,8 @@
     <string name="desc_telemetry">Zastaví odesílání záznamů o pádech a diagnostických hlášení systému.</string>
     <string name="title_app_info_details">Název balíčku a datum instalace v Informacích o aplikaci</string>
     <string name="desc_app_info_details">Zobrazí název balíčku (klepnutím zkopírujete) a datum instalace/aktualizace v Nastavení &gt; Aplikace &gt; Informace o aplikaci.</string>
+    <string name="title_fp_improve_accuracy">Zlepšit přesnost otisku prstu</string>
+    <string name="desc_fp_improve_accuracy">Odemkne možnost Zlepšit přesnost v Nastavení &gt; Zabezpečení a soukromí &gt; Otisky prstů (10 dodatečných skenů pro lepší rozpoznání přes ochranné sklo).</string>
 
     <!-- Battery -->
     <string name="sec_battery">Baterie</string>

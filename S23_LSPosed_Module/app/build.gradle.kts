@@ -10,8 +10,8 @@ android {
         applicationId = "com.s23.enhancements"
         minSdk = 30
         targetSdk = 35
-        versionCode = 28
-        versionName = "2.8"
+        versionCode = 29
+        versionName = "2.9"
     }
 
     compileOptions {
