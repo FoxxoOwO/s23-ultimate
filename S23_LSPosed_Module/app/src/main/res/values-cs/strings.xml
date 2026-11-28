@@ -305,4 +305,5 @@
     <string name="update_failed">Kontrola aktualizace selhala: %1$s</string>
     <string name="update_perm_required">Povolte instalaci aktualizací z aplikace S23 Enhancer</string>
     <string name="update_no_apk">Otevírám stránku vydání v prohlížeči…</string>
+    <string name="fab_restart_systemui">Restartovat SystemUI pro použití změn</string>
 </resources>

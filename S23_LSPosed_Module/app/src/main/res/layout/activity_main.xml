@@ -36,4 +36,18 @@
         android:layout_height="match_parent"
         app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
+    <ImageButton
+        android:id="@+id/fab_restart_sysui"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="20dp"
+        android:background="@drawable/bg_restart_fab"
+        android:contentDescription="@string/fab_restart_systemui"
+        android:elevation="6dp"
+        android:scaleType="centerInside"
+        android:src="@android:drawable/ic_popup_sync"
+        android:tint="@android:color/white"
+        android:visibility="gone" />
+
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
