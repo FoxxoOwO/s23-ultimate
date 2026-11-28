@@ -12,6 +12,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.View;
+import android.widget.ImageButton;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -220,18 +221,44 @@ public class MainActivity extends AppCompatActivity {
                     .commit();
         }
 
+        mRestartFab = findViewById(R.id.fab_restart_sysui);
+        if (mRestartFab != null) {
+            mRestartFab.setOnClickListener(v -> restartSystemUiNow());
+        }
+
         syncAllPrefsToGlobal();
         AppUpdater.checkOnStartup(this, mPrefs);
     }
 
-    // SystemUI only remeasures the battery on restart, so the width needs a nudge
-    private void nudgeSystemUiIfBattery(String key) {
-        if (!KEY_SB_PILL_WIDTH.equals(key)) return;
+    private ImageButton mRestartFab;
+
+    // Prefs that only take effect after a SystemUI restart surface the restart button
+    static boolean needsSystemUiRestart(String key) {
+        return KEY_SB_HIDE_BATTERY_PCT.equals(key) || KEY_SB_PILL_WIDTH.equals(key);
+    }
+
+    void markRestartPending() {
+        if (mRestartFab != null && !isFinishing()) mRestartFab.setVisibility(View.VISIBLE);
+    }
+
+    void restartSystemUiNow() {
+        Toast.makeText(this, R.string.toast_restarting_systemui, Toast.LENGTH_SHORT).show();
+        if (mRestartFab != null) mRestartFab.setVisibility(View.GONE);
         try {
-            Settings.Global.putLong(getContentResolver(), "s23enh_cmd_restart_systemui",
-                    System.currentTimeMillis());
+            Settings.Global.putLong(getContentResolver(),
+                    GLOBAL_PREFIX + "cmd_restart_systemui", System.currentTimeMillis());
         } catch (Throwable ignored) {
         }
+        new Thread(() -> {
+            try {
+                Thread.sleep(400L);
+                Process p = Runtime.getRuntime().exec(new String[]{
+                        "su", "-c", "killall com.android.systemui 2>/dev/null || pkill -x com.android.systemui 2>/dev/null"
+                });
+                p.waitFor();
+            } catch (Throwable ignored) {
+            }
+        }, "s23enh-restart-sysui").start();
     }
 
     private void mirrorToGlobal(String key, boolean value) {
@@ -451,6 +478,7 @@ public class MainActivity extends AppCompatActivity {
                 boolean checked = Boolean.TRUE.equals(newVal);
                 prefs().edit().putBoolean(key, checked).apply();
                 host().mirrorToGlobal(key, checked);
+                if (needsSystemUiRestart(key)) host().markRestartPending();
                 syncDependencies();
                 toast(getString(R.string.toast_saved));
                 return true;
@@ -920,7 +948,7 @@ public class MainActivity extends AppCompatActivity {
                     value -> {
                         prefs().edit().putInt(KEY_SB_PILL_WIDTH, value).apply();
                         host().mirrorIntToGlobal(KEY_SB_PILL_WIDTH, value);
-                        host().nudgeSystemUiIfBattery(KEY_SB_PILL_WIDTH);
+                        host().markRestartPending();
                         syncStatusBarSummaries();
                         toast(getString(R.string.toast_saved));
                     });
@@ -1439,23 +1467,7 @@ public class MainActivity extends AppCompatActivity {
         // ---------------------------------------------------------- system helpers
 
         private void restartSystemUi() {
-            toast(getString(R.string.toast_restarting_systemui));
-            Context ctx = host();
-            try {
-                Settings.Global.putLong(ctx.getContentResolver(),
-                        GLOBAL_PREFIX + "cmd_restart_systemui", System.currentTimeMillis());
-            } catch (Throwable ignored) {
-            }
-            new Thread(() -> {
-                try {
-                    Thread.sleep(400L);
-                    Process p = Runtime.getRuntime().exec(new String[]{
-                            "su", "-c", "killall com.android.systemui 2>/dev/null || pkill -x com.android.systemui 2>/dev/null"
-                    });
-                    p.waitFor();
-                } catch (Throwable ignored) {
-                }
-            }, "s23enh-restart-sysui").start();
+            host().restartSystemUiNow();
         }
 
         private long currentTimeout() {

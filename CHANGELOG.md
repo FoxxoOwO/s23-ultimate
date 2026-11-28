@@ -12,6 +12,7 @@ All notable changes to **S23 Enhancer** are documented in this file.
 
 ### Changed
 - **Status Bar → Restart SystemUI** now states that the restart needs root access granted to S23 Enhancer, both in the row summary and in the confirmation dialog.
+- Changing a setting that only applies after a SystemUI restart (`pref_sb_hide_battery_pct`, `pref_sb_battery_pill_width`) reveals a floating restart button in the bottom-right corner of the app, so the restart is one tap away instead of a trip back to the settings row.
 
 ## [3.0] - 2026-11-28
 

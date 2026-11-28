@@ -305,4 +305,5 @@
     <string name="update_failed">Update check failed: %1$s</string>
     <string name="update_perm_required">Allow installing updates from S23 Enhancer</string>
     <string name="update_no_apk">Opening release page in browser…</string>
+    <string name="fab_restart_systemui">Restart SystemUI to apply changes</string>
 </resources>
