@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.database.ContentObserver;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.net.TrafficStats;
@@ -66,6 +67,8 @@ final class SystemUiHooks {
     private static final String PREF_SB_MAX_NOTIF_ICONS = "pref_sb_max_notif_icons";
     private static final String PREF_SB_ONE_CONN_ICON = "pref_sb_one_connection_icon";
     private static final String PREF_SB_BACK_BUTTON = "pref_sb_back_button";
+    private static final String PREF_SB_HIDE_BATTERY_PCT = "pref_sb_hide_battery_pct";
+    private static final String PREF_SB_PILL_WIDTH = "pref_sb_battery_pill_width";
     private static final String PREF_SB_BURN_IN = "pref_sb_burn_in_protect";
     private static final String PREF_SB_NET_SPEED = "pref_sb_net_speed";
     private static final String PREF_SB_NET_SPEED_MODE = "pref_sb_net_speed_mode";
@@ -103,6 +106,12 @@ final class SystemUiHooks {
     private static volatile boolean sPrefTapVibrate = true;
     private static volatile int sPrefTapVibrateStrength = 1;
     private static volatile boolean sPrefDoubleTapSleep = false;
+    private static volatile boolean sPrefHideBatteryPct = false;
+    private static volatile int sPrefPillWidth = -1;
+    private static Field fPillText;
+    private static Field fPillWidth;
+    private static Field fPillFont;
+    private static Paint sPillPaint;
     private static final ConcurrentHashMap<String, String> sPrefActions = new ConcurrentHashMap<>();
 
     // Cached status bar child views
@@ -193,6 +202,7 @@ final class SystemUiHooks {
         sModule = module;
 
         hookBatteryController(module, cl);
+        hookBatteryPercent(module, cl);
         hookNotifications(module, cl);
         hookMaxNotificationIcons(module, cl);
         hookItemSpacing(module, cl);
@@ -217,7 +227,101 @@ final class SystemUiHooks {
         }
     }
 
-    // ------------------------------------------------------------------ 2. Notifications
+    // ------------------------------------------------------------------ 2. Battery percentage hide
+
+    private static void hookBatteryPercent(HookEntry module, ClassLoader cl) {
+        // Hook SamsungBatteryMeterDrawable#shouldShowPercentageIcon → force false when pref enabled
+        try {
+            Class<?> cls = cl.loadClass("com.android.systemui.battery.SamsungBatteryMeterDrawable");
+            module.hookAllMethods(cls, "shouldShowPercentageIcon", chain -> {
+                if (sPrefHideBatteryPct) return false;
+                return chain.proceed();
+            });
+            Log.i(TAG, "Hooked SamsungBatteryMeterDrawable#shouldShowPercentageIcon");
+        } catch (Throwable t) {
+            Log.w(TAG, "SamsungBatteryMeterDrawable pct hook failed: " + t.getMessage());
+        }
+
+        // Compose battery pill: blank the level text so the pill keeps its icon but loses the number
+        try {
+            Class<?> lambda = cl.loadClass("com.android.systemui.battery.view.SamsungBatteryComposeViewKt$$ExternalSyntheticLambda0");
+            Method invoke = lambda.getDeclaredMethod("invoke", Object.class);
+            module.hook(invoke).intercept(chain -> {
+                if (sPrefHideBatteryPct) {
+                    try {
+                        if (fPillText == null) {
+                            Field f = lambda.getDeclaredField("f$3");
+                            f.setAccessible(true);
+                            fPillText = f;
+                        }
+                        fPillText.set(chain.getThisObject(), "");
+                    } catch (Throwable ignored) {}
+                }
+                return chain.proceed();
+            });
+            Log.i(TAG, "Hooked SamsungBatteryComposeView lambda (pct text blank)");
+        } catch (Throwable t) {
+            Log.w(TAG, "SamsungBatteryComposeView lambda hook failed: " + t.getMessage());
+        }
+
+        // Narrow the pill by the share (%) of the number's reserved width, 0 = Samsung default
+        try {
+            Class<?> stateCls = cl.loadClass("com.android.systemui.battery.BatteryLayoutState");
+            module.hookConstructors(stateCls, chain -> {
+                Object res = chain.proceed();
+                if (sPrefHideBatteryPct && sPrefPillWidth > 0 && res != null) {
+                    try {
+                        if (fPillWidth == null) {
+                            Field b = stateCls.getDeclaredField("totalWidthPx");
+                            b.setAccessible(true);
+                            Field c = stateCls.getDeclaredField("textFontSizePx");
+                            c.setAccessible(true);
+                            fPillFont = c;
+                            fPillWidth = b;
+                        }
+                        Object self = chain.getThisObject();
+                        float ts = fPillFont.getFloat(self);
+                        int w = fPillWidth.getInt(self);
+                        if (ts > 0 && w > 0) {
+                            if (sPillPaint == null) {
+                                sPillPaint = new Paint();
+                                sPillPaint.setTypeface(Typeface.DEFAULT_BOLD);
+                            }
+                            sPillPaint.setTextSize(ts);
+                            int reserve = Math.round(sPillPaint.measureText("100") * Math.min(100, sPrefPillWidth) / 100f);
+                            fPillWidth.setInt(self, Math.max(0, w - reserve));
+                        }
+                    } catch (Throwable ignored) {}
+                }
+                return res;
+            });
+            Log.i(TAG, "Hooked BatteryLayoutState constructor (pill width)");
+        } catch (Throwable t) {
+            Log.w(TAG, "BatteryLayoutState hook failed: " + t.getMessage());
+        }
+
+        // Hook BatteryMeterView#updateShowPercent → also hide the external percent TextView
+        try {
+            Class<?> cls = cl.loadClass("com.android.systemui.battery.BatteryMeterView");
+            module.hookAllMethods(cls, "updateShowPercent", chain -> {
+                chain.proceed();
+                if (sPrefHideBatteryPct) {
+                    try {
+                        Field f = cls.getDeclaredField("mBatteryPercentView");
+                        f.setAccessible(true);
+                        View v = (View) f.get(chain.getThisObject());
+                        if (v != null) v.setVisibility(View.GONE);
+                    } catch (Throwable ignored) {}
+                }
+                return null;
+            });
+            Log.i(TAG, "Hooked BatteryMeterView#updateShowPercent");
+        } catch (Throwable t) {
+            Log.w(TAG, "BatteryMeterView pct hook failed: " + t.getMessage());
+        }
+    }
+
+    // ------------------------------------------------------------------ 3. Notifications
 
     private static void hookNotifications(HookEntry module, ClassLoader cl) {
         try {
@@ -539,6 +643,8 @@ final class SystemUiHooks {
         sPrefTapVibrate = mod.isPref(PREF_SB_TAP_VIBRATE, true);
         sPrefTapVibrateStrength = mod.getIntPref(PREF_SB_TAP_VIBRATE_STRENGTH, 1);
         sPrefDoubleTapSleep = mod.isPref(PREF_SB_DOUBLE_TAP_SLEEP, false);
+        sPrefHideBatteryPct = mod.isPref(PREF_SB_HIDE_BATTERY_PCT, false);
+        sPrefPillWidth = mod.getIntPref(PREF_SB_PILL_WIDTH, -1);
         for (String target : ACTION_TARGETS) {
             String tapKey = PREF_SB_TAP_PREFIX + target;
             String longKey = PREF_SB_LONG_PREFIX + target;

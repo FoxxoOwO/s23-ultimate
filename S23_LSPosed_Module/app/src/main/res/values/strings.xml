@@ -21,7 +21,7 @@
     <string name="desc_camera_shutter_mute">Allows muting the camera shutter sound even in regions enforced by CSC lock. Adds the Shutter sound toggle in Camera settings.</string>
     <string name="desc_camera_jpeg_100">Saves JPEG photos at 100% quality and disables extra recompression.</string>
     <string name="title_camera_skip_postproc">Skip Post-processing</string>
-    <string name="desc_camera_skip_postproc">Stills only (video is not affected). Bypasses the picture pipeline stages (HDR fusion, AI ISP, super resolution, face restoration, beauty, de-flicker) so photos keep the raw ISP output. Force-stop Camera after toggling.</string>
+    <string name="desc_camera_skip_postproc">Unlocks the Skip post-processing switch inside Camera Settings (stills only; video is not affected). When disabled here, the switch is hidden and post-processing is untouched.</string>
 
     <!-- Display -->
     <string name="title_display_outdoor">Outdoor Mode</string>
@@ -174,6 +174,9 @@
     <string name="sb_row_item_spacing">Space between items</string>
     <string name="sb_item_spacing_sub">Less space leaves more room for icons.</string>
     <string name="sb_item_spacing_val">%1$d dp</string>
+    <string name="sb_row_pill_width">Battery pill width</string>
+    <string name="sb_pill_width_sub">Share of the freed space the pill gives up (only with the number hidden).</string>
+    <string name="sb_pill_width_val">%1$d %% narrower</string>
     <string name="sb_reset">Reset</string>
     <string name="sb_save">Save</string>
 
@@ -210,6 +213,8 @@
     <string name="desc_sb_one_conn">Hides the mobile signal icon while connected to Wi-Fi.</string>
     <string name="title_sb_back_btn">Show a back button</string>
     <string name="desc_sb_back_btn">Adds a compact Back chevron (&lt;) at the left edge of the status bar.</string>
+    <string name="title_sb_hide_battery_pct">Hide battery percentage</string>
+    <string name="desc_sb_hide_battery_pct">Hides the percentage number inside the battery pill in the status bar. Requires a SystemUI restart to apply.</string>
     <string name="title_sb_burn_in">Protect against screen burn-in</string>
     <string name="desc_sb_burn_in">Periodically shifts status bar items by a few pixels (Samsung pixel-shift).</string>
     <string name="title_sb_net_speed">Network speed meter</string>

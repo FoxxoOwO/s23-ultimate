@@ -92,6 +92,8 @@ public class MainActivity extends AppCompatActivity {
     public static final String KEY_SB_HIDDEN_ICONS = "pref_sb_hidden_icons";
     public static final String KEY_SB_ONE_CONN_ICON = "pref_sb_one_connection_icon";
     public static final String KEY_SB_BACK_BUTTON = "pref_sb_back_button";
+    public static final String KEY_SB_HIDE_BATTERY_PCT = "pref_sb_hide_battery_pct";
+    public static final String KEY_SB_PILL_WIDTH = "pref_sb_battery_pill_width";
     public static final String KEY_SB_BURN_IN = "pref_sb_burn_in_protect";
     public static final String KEY_SB_NET_SPEED = "pref_sb_net_speed";
     public static final String KEY_SB_NET_SPEED_MODE = "pref_sb_net_speed_mode";
@@ -173,13 +175,15 @@ public class MainActivity extends AppCompatActivity {
             KEY_SB_ONE_CONN_ICON, KEY_SB_BACK_BUTTON, KEY_SB_BURN_IN,
             KEY_SB_NET_SPEED, KEY_SB_NET_SPEED_AUTO_HIDE,
             KEY_SB_DOUBLE_TAP_SLEEP, KEY_SB_TAP_VIBRATE,
+            KEY_SB_HIDE_BATTERY_PCT,
             KEY_NOTIF_AUTO_EXPAND, KEY_NOTIF_GROUPS_ONE_TAP, KEY_NOTIF_KEEP_SILENT_SMALL
     };
 
     private static final String[] ALL_INT_KEYS = {
             KEY_LOCKSCREEN_WIDGET_ROWS,
             KEY_SB_EDGE_MODE, KEY_SB_EDGE_DP, KEY_SB_ITEM_SPACING,
-            KEY_SB_MAX_NOTIF_ICONS, KEY_SB_NET_SPEED_MODE, KEY_SB_TAP_VIBRATE_STRENGTH
+            KEY_SB_MAX_NOTIF_ICONS, KEY_SB_NET_SPEED_MODE, KEY_SB_TAP_VIBRATE_STRENGTH,
+            KEY_SB_PILL_WIDTH
     };
 
     private static final String[] ALL_STRING_KEYS = {
@@ -271,6 +275,7 @@ public class MainActivity extends AppCompatActivity {
                 || KEY_SB_BACK_BUTTON.equals(key)
                 || KEY_SB_NET_SPEED.equals(key)
                 || KEY_SB_DOUBLE_TAP_SLEEP.equals(key)
+                || KEY_SB_HIDE_BATTERY_PCT.equals(key)
                 || KEY_NOTIF_AUTO_EXPAND.equals(key)
                 || KEY_NOTIF_GROUPS_ONE_TAP.equals(key)) {
             return false;
@@ -282,6 +287,7 @@ public class MainActivity extends AppCompatActivity {
         if (KEY_SB_EDGE_DP.equals(key)) return 4;
         if (KEY_SB_ITEM_SPACING.equals(key)) return -1;
         if (KEY_SB_TAP_VIBRATE_STRENGTH.equals(key)) return 1;
+        if (KEY_SB_PILL_WIDTH.equals(key)) return -1;
         return 0;
     }
 
@@ -315,6 +321,7 @@ public class MainActivity extends AppCompatActivity {
         private Preference mSbEdgeSpaceRow;
         private Preference mSbItemSpacingRow;
         private Preference mSbMaxNotifRow;
+        private Preference mSbPillWidthRow;
         private Preference mSbHiddenIconsRow;
         private Preference mSbNetSpeedModeRow;
         private SwitchPreferenceCompat mSbNetSpeedAutoHideSwitch;
@@ -604,6 +611,13 @@ public class MainActivity extends AppCompatActivity {
 
             switchPref(cat, ctx, KEY_SB_ONE_CONN_ICON, R.string.title_sb_one_conn, R.string.desc_sb_one_conn, false);
             switchPref(cat, ctx, KEY_SB_BACK_BUTTON, R.string.title_sb_back_btn, R.string.desc_sb_back_btn, false);
+            mSbPillWidthRow = actionPref(cat, ctx, R.string.sb_row_pill_width);
+            mSbPillWidthRow.setOnPreferenceClickListener(p -> {
+                pickPillWidth();
+                return true;
+            });
+
+            switchPref(cat, ctx, KEY_SB_HIDE_BATTERY_PCT, R.string.title_sb_hide_battery_pct, R.string.desc_sb_hide_battery_pct, false);
             switchPref(cat, ctx, KEY_SB_BURN_IN, R.string.title_sb_burn_in, R.string.desc_sb_burn_in, true);
             switchPref(cat, ctx, KEY_SB_NET_SPEED, R.string.title_sb_net_speed, R.string.desc_sb_net_speed, false);
 
@@ -882,6 +896,25 @@ public class MainActivity extends AppCompatActivity {
                     });
         }
 
+        private void pickPillWidth() {
+            int cur = prefs().getInt(KEY_SB_PILL_WIDTH, -1);
+            int start = cur < 0 ? 0 : Math.max(0, Math.min(100, cur));
+            OneUiDialog.showSlider(
+                    host(),
+                    getString(R.string.sb_row_pill_width),
+                    getString(R.string.sb_pill_width_sub),
+                    0, 100, start,
+                    v -> getString(R.string.sb_pill_width_val, v),
+                    getString(R.string.sb_reset), -1,
+                    getString(R.string.sb_save),
+                    value -> {
+                        prefs().edit().putInt(KEY_SB_PILL_WIDTH, value).apply();
+                        host().mirrorIntToGlobal(KEY_SB_PILL_WIDTH, value);
+                        syncStatusBarSummaries();
+                        toast(getString(R.string.toast_saved));
+                    });
+        }
+
         private void pickHiddenIcons() {
             String raw = Settings.Secure.getString(host().getContentResolver(), "icon_blacklist");
             if (raw == null || raw.isEmpty()) {
@@ -1005,6 +1038,12 @@ public class MainActivity extends AppCompatActivity {
                 mSbMaxNotifRow.setSummary(max <= 0
                         ? getString(R.string.sb_edge_samsung)
                         : getString(R.string.sb_max_notif_val, max));
+            }
+            if (mSbPillWidthRow != null) {
+                int pw = prefs().getInt(KEY_SB_PILL_WIDTH, -1);
+                mSbPillWidthRow.setSummary(pw <= 0
+                        ? getString(R.string.sb_edge_samsung)
+                        : getString(R.string.sb_pill_width_val, pw));
             }
             if (mSbHiddenIconsRow != null) {
                 String raw = Settings.Secure.getString(host().getContentResolver(), "icon_blacklist");
