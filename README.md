@@ -27,7 +27,7 @@ The module unlocks features that Samsung has software-locked on the S23 and adds
 
 | Area | Features & Preference Keys |
 | :--- | :--- |
-| **Camera** | Log Video (`pref_camera_log_video`), 4K60 lens switching (`pref_camera_4k60_lenses`), 4K120 Slow Motion (`pref_camera_4k120_slowmo`), 100% JPEG quality (`pref_camera_jpeg_100`), Shutter sound mute toggle (`pref_camera_shutter_mute`), Skip post-processing for stills (`pref_camera_skip_postproc`) |
+| **Camera** | Log Video (`pref_camera_log_video`), 4K60 lens switching (`pref_camera_4k60_lenses`), 4K120 Slow Motion (`pref_camera_4k120_slowmo`), 100% JPEG quality (`pref_camera_jpeg_100`), Shutter sound mute toggle (`pref_camera_shutter_mute`), Skip post-processing for stills (`pref_camera_skip_postproc`, also exposed as a **Skip post-processing** switch inside the Camera app settings) |
 | **Display** | Outdoor Mode toggle (`pref_display_outdoor_mode` + Quick Settings tile), Display color profiles (`pref_display_screen_mode`: AMOLED Cinema / Photo / Basic), Extended screen timeouts (`pref_display_screen_timeout`: 30 min / 1 hr / Never), Action timeout (`pref_display_action_timeout`), Adaptive Color Tone (`pref_display_adaptive_color_tone`), Unlock custom fonts (`pref_display_unlock_fonts`) |
 | **Lock Screen** | Multi-row lock screen widget grid (`pref_lockscreen_widget_rows`: Samsung's default 1 row / 4 slots, 2 rows / up to 8 widgets, or 3 rows / up to 12 widgets), Live charging details on lock screen & AOD (`pref_lockscreen_charging_info`: `W · mA · V · °C`) |
 | **Recents** | Configurable Recents task menu items (`pref_recents_force_stop`, `pref_recents_restart`, `pref_recents_clear_cache`, `pref_recents_screenshot`) |
