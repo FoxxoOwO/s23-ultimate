@@ -224,6 +224,16 @@ public class MainActivity extends AppCompatActivity {
         AppUpdater.checkOnStartup(this, mPrefs);
     }
 
+    // SystemUI only remeasures the battery on restart, so battery prefs need a nudge
+    private void nudgeSystemUiIfBattery(String key) {
+        if (!KEY_SB_HIDE_BATTERY_PCT.equals(key) && !KEY_SB_PILL_WIDTH.equals(key)) return;
+        try {
+            Settings.Global.putLong(getContentResolver(), "s23enh_cmd_restart_systemui",
+                    System.currentTimeMillis());
+        } catch (Throwable ignored) {
+        }
+    }
+
     private void mirrorToGlobal(String key, boolean value) {
         try {
             Settings.Global.putInt(getContentResolver(), GLOBAL_PREFIX + key, value ? 1 : 0);
@@ -441,6 +451,7 @@ public class MainActivity extends AppCompatActivity {
                 boolean checked = Boolean.TRUE.equals(newVal);
                 prefs().edit().putBoolean(key, checked).apply();
                 host().mirrorToGlobal(key, checked);
+                host().nudgeSystemUiIfBattery(key);
                 syncDependencies();
                 toast(getString(R.string.toast_saved));
                 return true;
@@ -910,6 +921,7 @@ public class MainActivity extends AppCompatActivity {
                     value -> {
                         prefs().edit().putInt(KEY_SB_PILL_WIDTH, value).apply();
                         host().mirrorIntToGlobal(KEY_SB_PILL_WIDTH, value);
+                        host().nudgeSystemUiIfBattery(KEY_SB_PILL_WIDTH);
                         syncStatusBarSummaries();
                         toast(getString(R.string.toast_saved));
                     });

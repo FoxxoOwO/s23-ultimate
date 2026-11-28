@@ -4,7 +4,6 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.database.ContentObserver;
 import android.graphics.Color;
-import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.net.TrafficStats;
@@ -110,8 +109,10 @@ final class SystemUiHooks {
     private static volatile int sPrefPillWidth = -1;
     private static Field fPillText;
     private static Field fPillWidth;
-    private static Field fPillFont;
-    private static Paint sPillPaint;
+    private static Field fPillIcon;
+    private static Field fPillHeight;
+    // Original width per layout state, so repeated measures never shrink twice
+    private static final java.util.WeakHashMap<Object, Integer> sPillOriginalWidth = new java.util.WeakHashMap<>();
     private static final ConcurrentHashMap<String, String> sPrefActions = new ConcurrentHashMap<>();
 
     // Cached status bar child views
@@ -230,18 +231,6 @@ final class SystemUiHooks {
     // ------------------------------------------------------------------ 2. Battery percentage hide
 
     private static void hookBatteryPercent(HookEntry module, ClassLoader cl) {
-        // Hook SamsungBatteryMeterDrawable#shouldShowPercentageIcon → force false when pref enabled
-        try {
-            Class<?> cls = cl.loadClass("com.android.systemui.battery.SamsungBatteryMeterDrawable");
-            module.hookAllMethods(cls, "shouldShowPercentageIcon", chain -> {
-                if (sPrefHideBatteryPct) return false;
-                return chain.proceed();
-            });
-            Log.i(TAG, "Hooked SamsungBatteryMeterDrawable#shouldShowPercentageIcon");
-        } catch (Throwable t) {
-            Log.w(TAG, "SamsungBatteryMeterDrawable pct hook failed: " + t.getMessage());
-        }
-
         // Compose battery pill: blank the level text so the pill keeps its icon but loses the number
         try {
             Class<?> lambda = cl.loadClass("com.android.systemui.battery.view.SamsungBatteryComposeViewKt$$ExternalSyntheticLambda0");
@@ -264,40 +253,24 @@ final class SystemUiHooks {
             Log.w(TAG, "SamsungBatteryComposeView lambda hook failed: " + t.getMessage());
         }
 
-        // Narrow the pill by the share (%) of the number's reserved width, 0 = Samsung default
+        // Narrow the pill by the share (%) of the number's reserved width, 0 = Samsung default.
+        // Applied in the measure policy so a pref change only needs requestLayout(), not a restart.
         try {
-            Class<?> stateCls = cl.loadClass("com.android.systemui.battery.BatteryLayoutState");
-            module.hookConstructors(stateCls, chain -> {
-                Object res = chain.proceed();
-                if (sPrefHideBatteryPct && sPrefPillWidth > 0 && res != null) {
-                    try {
-                        if (fPillWidth == null) {
-                            Field b = stateCls.getDeclaredField("totalWidthPx");
-                            b.setAccessible(true);
-                            Field c = stateCls.getDeclaredField("textFontSizePx");
-                            c.setAccessible(true);
-                            fPillFont = c;
-                            fPillWidth = b;
-                        }
-                        Object self = chain.getThisObject();
-                        float ts = fPillFont.getFloat(self);
-                        int w = fPillWidth.getInt(self);
-                        if (ts > 0 && w > 0) {
-                            if (sPillPaint == null) {
-                                sPillPaint = new Paint();
-                                sPillPaint.setTypeface(Typeface.DEFAULT_BOLD);
-                            }
-                            sPillPaint.setTextSize(ts);
-                            int reserve = Math.round(sPillPaint.measureText("100") * Math.min(100, sPrefPillWidth) / 100f);
-                            fPillWidth.setInt(self, Math.max(0, w - reserve));
-                        }
-                    } catch (Throwable ignored) {}
+            Class<?> policyCls = cl.loadClass("com.android.systemui.battery.SamsungBatteryMeasurePolicy");
+            Field stateField = policyCls.getDeclaredField("state");
+            stateField.setAccessible(true);
+            module.hookAllMethods(policyCls, "measure-3p2s80s", chain -> {
+                try {
+                    Object policy = chain.getThisObject();
+                    Object state = stateField.get(policy);
+                    if (state != null) applyPillWidth(state);
+                } catch (Throwable ignored) {
                 }
-                return res;
+                return chain.proceed();
             });
-            Log.i(TAG, "Hooked BatteryLayoutState constructor (pill width)");
+            Log.i(TAG, "Hooked SamsungBatteryMeasurePolicy#measure (pill width)");
         } catch (Throwable t) {
-            Log.w(TAG, "BatteryLayoutState hook failed: " + t.getMessage());
+            Log.w(TAG, "SamsungBatteryMeasurePolicy hook failed: " + t.getMessage());
         }
 
         // Hook BatteryMeterView#updateShowPercent → also hide the external percent TextView
@@ -1488,6 +1461,12 @@ final class SystemUiHooks {
                             }
                             refreshPrefCache(sModule);
                             syncStatusBar();
+                            // pref writes must re-layout the status bar so the battery remeasures
+                            View root = sStatusRoot;
+                            if (root != null) {
+                                root.requestLayout();
+                                root.invalidate();
+                            }
                         }
                     });
         } catch (Throwable t) {
@@ -1511,6 +1490,44 @@ final class SystemUiHooks {
                     });
         } catch (Throwable t) {
             Log.w(TAG, "Settings.Global restart observer failed: " + t.getMessage());
+        }
+    }
+
+    private static void applyPillWidth(Object state) {
+        try {
+            if (fPillWidth == null) {
+                Class<?> cls = state.getClass();
+                Field w = cls.getDeclaredField("totalWidthPx");
+                w.setAccessible(true);
+                Field iw = cls.getDeclaredField("iconWidthPx");
+                iw.setAccessible(true);
+                fPillIcon = iw;
+                Field th = cls.getDeclaredField("totalHeightPx");
+                th.setAccessible(true);
+                fPillHeight = th;
+                fPillWidth = w;
+            }
+            Integer cached = sPillOriginalWidth.get(state);
+            int original;
+            if (cached != null) {
+                original = cached;
+            } else {
+                original = fPillWidth.getInt(state);
+                sPillOriginalWidth.put(state, original);
+            }
+            int target = original;
+            int pct = Math.min(100, sPrefPillWidth);
+            // widest shrink that still keeps a capsule: icon plus one rounded end per side
+            int minW = fPillIcon.getInt(state) + fPillHeight.getInt(state);
+            if (sPrefHideBatteryPct && pct > 0 && original > minW) {
+                target = original - Math.round((original - minW) * pct / 100f);
+            }
+            if (fPillWidth.getInt(state) != target) {
+                fPillWidth.setInt(state, target);
+                Log.i(TAG, "pill width " + original + " -> " + target
+                        + " pct=" + pct + " hide=" + sPrefHideBatteryPct + " min=" + minW);
+            }
+        } catch (Throwable ignored) {
         }
     }
 
