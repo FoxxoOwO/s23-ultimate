@@ -20,6 +20,8 @@
     <string name="title_camera_shutter_mute">Shutter Sound Mute</string>
     <string name="desc_camera_shutter_mute">Allows muting the camera shutter sound even in regions enforced by CSC lock. Adds the Shutter sound toggle in Camera settings.</string>
     <string name="desc_camera_jpeg_100">Saves JPEG photos at 100% quality and disables extra recompression.</string>
+    <string name="title_camera_skip_postproc">Skip Post-processing</string>
+    <string name="desc_camera_skip_postproc">Stills only (video is not affected). Bypasses the picture pipeline stages (HDR fusion, AI ISP, super resolution, face restoration, beauty, de-flicker) so photos keep the raw ISP output. Force-stop Camera after toggling.</string>
 
     <!-- Display -->
     <string name="title_display_outdoor">Outdoor Mode</string>

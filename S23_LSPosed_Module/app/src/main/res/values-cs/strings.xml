@@ -18,6 +18,8 @@
     <string name="desc_camera_4k120_slowmo">Odemkne rozlišení 3840x2160 při 120 sn./s v režimu Zpomalený záběr (skrytá položka tabulky rozlišení).</string>
     <string name="title_camera_jpeg_100">100% kvalita JPEG</string>
     <string name="title_camera_shutter_mute">Ztlumení zvuku závěrky</string>
+    <string name="title_camera_skip_postproc">Přeskočit post-procesing</string>
+    <string name="desc_camera_skip_postproc">Pouze statické fotky (video není ovlivněno). Vynechá fáze zpracování snímku (HDR fúze, AI ISP, super rozlišení, obnova obličejů, beauty, de-flicker), takže fotka zůstane v surovém výstupu ISP. Po přepnutí fotoaparát vynuceně ukončete.</string>
     <string name="desc_camera_shutter_mute">Umožní vypnout zvuk závěrky fotoaparátu i v regionech vynucených zámkem CSC. Přidá přepínač Zvuk závěrky do nastavení Fotoaparátu.</string>
     <string name="desc_camera_jpeg_100">Ukládá fotografie JPEG ve 100% kvalitě a vypíná dodatečnou rekompresi.</string>
 

@@ -58,7 +58,7 @@ Původně vznikl jako Magisk/KernelSU překryv (`S23_Custom_Enhancer`, modifikac
 
 ---
 
-## 3. Funkce a hooky (16 položek)
+## 3. Funkce a hooky (17 položek)
 
 ### A. Fotoaparát (`com.sec.android.app.camera`)
 | # | Funkce | Pref klíč | Hook |
@@ -68,6 +68,7 @@ Původně vznikl jako Magisk/KernelSU překryv (`S23_Custom_Enhancer`, modifikac
 | 3 | **100% kvalita JPEG** | `pref_camera_jpeg_100` | `CaptureRequest` JPEG_QUALITY=100, `Bitmap.compress(…,100,…)`, `ro.media.enc.jpeg.quality=100` |
 | 4 | **Vypnutí zvuku závěrky** | `pref_camera_shutter_mute` | `EnumMap.put` tag `SUPPORT_SHUTTER_SOUND_MENU` → `true`, `Settings.System.getInt(…, "csc_pref_camera_forced_shuttersound_key", …)` → `0`, a v `CameraAudioManager.onResume()` vynulování pole `mForceShutterSound` (obfuskované `a8.v.p`) |
 | 16 | **4K120 ve Zpomaleném pohybu** | `pref_camera_4k120_slowmo` | stejný hook mapy camcorder features: pro `BACK/FRONT_CAMCORDER_RESOLUTION_FEATURE_MAP_3840X2160_120FPS` přidá `slow_motion` do `supported-mode` a `value=true` |
+| 17 | **Přeskočení post-procesingu** (jen statické fotky) | `pref_camera_skip_postproc` | `com.samsung.android.camera.core2.node.NodeChain#enableNodeChain` — pro 25 klíčů z `NodeChainKeyContainer` (AI_ISP, LL_HDR, MF_HDR, AEB_HDR, HYBRID_HDR, SS_HDR, HIFI_LLS, SUPER_NIGHT, SR, UW_SR, RAW_SR, MACRO_RAW_SR, TETRA_SR, HIGH_RES, AI_HIGH_RES, FUSION_HIGH_RES, AI_CLEAR_ZOOM, AI_ISP_ZOOM, LOCAL_TM, SIE, DE_FLICKER, DE_FLICKER_HDR, BEAUTY, SELFIE_CORRECTION, FACE_RESTORATION) se `enableNodeChain(true)` nezavolá → chain propustí vstup beze změny. ENCODER/EXIF/WATERMARK/FILTER zůstávají zapnuté, video jde jinou pipeline |
 
 ### Poznámka: obfuskované třídy kamery v One UI 9 (funkce 2 a 16)
 
