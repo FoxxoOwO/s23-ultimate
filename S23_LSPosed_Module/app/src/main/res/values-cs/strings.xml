@@ -174,6 +174,9 @@
     <string name="sb_row_item_spacing">Mezery mezi položkami</string>
     <string name="sb_item_spacing_sub">Menší mezera ponechá více místa pro ikony.</string>
     <string name="sb_item_spacing_val">%1$d dp</string>
+    <string name="sb_row_pill_width">Šířka pilulky baterie</string>
+    <string name="sb_pill_width_sub">Jakou část uvolněného místa pilulka ztratí (jen se skrytým číslem).</string>
+    <string name="sb_pill_width_val">o %1$d %% užší</string>
     <string name="sb_reset">Obnovit</string>
     <string name="sb_save">Uložit</string>
 

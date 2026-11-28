@@ -11,6 +11,16 @@ All notable changes to **S23 Enhancer** are documented in this file.
   - Pref is read through the app's own `ActivityThread#currentApplication` context (`isPrefAppCtx`), because `ActivityThread#getSystemContext` belongs to package `android` and every `Settings.Global` read through it throws `SecurityException: Given calling package android does not match caller's uid` in app processes.
   - Added toggle in the **Camera** section of [MainActivity](S23_LSPosed_Module/app/src/main/java/com/s23/enhancements/ui/MainActivity.java) with English and Czech (`values-cs`) strings.
 
+## [3.2] - 2026-11-28
+
+### Added
+- **Status bar → Hide battery percentage** (`pref_sb_hide_battery_pct`, [SystemUiHooks#hookBatteryPercent](S23_LSPosed_Module/app/src/main/java/com/s23/enhancements/SystemUiHooks.java)):
+  - Keeps Samsung's battery pill in the status bar but drops the number inside it. The percentage is not driven by a setting on One UI 9: `shouldShowText` in the Compose battery layout is hardcoded to `true`, so `display_battery_percentage`, `status_bar_show_battery_percent`, `battery_percent` and `show_battery_percent` in `Settings.System`/`Secure`/`Global` change nothing.
+  - Hooks the Compose draw lambda `com.android.systemui.battery.view.SamsungBatteryComposeViewKt$$ExternalSyntheticLambda0#invoke` and blanks its captured text (`f$3`) before `drawText` runs, so the pill keeps its icon and level fill.
+- **Status bar → Battery pill width** (`pref_sb_battery_pill_width`, `0–100 %`):
+  - `0 %` (default) keeps Samsung's layout, which permanently reserves room for three digits; higher values give that space back and shrink the pill towards just the icon.
+  - Applied by hooking the `com.android.systemui.battery.BatteryLayoutState` constructor and subtracting `measureText("100") × value / 100` from `totalWidthPx`.
+
 ## [3.1] - 2026-11-28
 
 ### Added
