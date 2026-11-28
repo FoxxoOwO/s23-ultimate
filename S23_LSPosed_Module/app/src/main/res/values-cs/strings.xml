@@ -19,7 +19,7 @@
     <string name="title_camera_jpeg_100">100% kvalita JPEG</string>
     <string name="title_camera_shutter_mute">Ztlumení zvuku závěrky</string>
     <string name="title_camera_skip_postproc">Přeskočit post-procesing</string>
-    <string name="desc_camera_skip_postproc">Pouze statické fotky (video není ovlivněno). Vynechá fáze zpracování snímku (HDR fúze, AI ISP, super rozlišení, obnova obličejů, beauty, de-flicker), takže fotka zůstane v surovém výstupu ISP. Po přepnutí fotoaparát vynuceně ukončete.</string>
+    <string name="desc_camera_skip_postproc">Odemkne přepínač Přeskočit post-procesing přímo v Nastavení fotoaparátu (pouze statické fotky; video není ovlivněno). Pokud je zde vypnuto, přepínač se skryje a do post-procesingu se nezasahuje.</string>
     <string name="desc_camera_shutter_mute">Umožní vypnout zvuk závěrky fotoaparátu i v regionech vynucených zámkem CSC. Přidá přepínač Zvuk závěrky do nastavení Fotoaparátu.</string>
     <string name="desc_camera_jpeg_100">Ukládá fotografie JPEG ve 100% kvalitě a vypíná dodatečnou rekompresi.</string>
 
@@ -210,6 +210,8 @@
     <string name="desc_sb_one_conn">Skryje ikonu mobilního signálu při připojení k Wi-Fi.</string>
     <string name="title_sb_back_btn">Zobrazit tlačítko Zpět</string>
     <string name="desc_sb_back_btn">Přidá kompaktní šipku Zpět (&lt;) na levý okraj stavového řádku.</string>
+    <string name="title_sb_hide_battery_pct">Skrýt procenta baterie</string>
+    <string name="desc_sb_hide_battery_pct">Skryje číslo procent uvnitř pilulky baterie ve stavovém řádku. Ke změně je potřeba restartovat SystemUI.</string>
     <string name="title_sb_burn_in">Ochrana proti vypálení obrazovky</string>
     <string name="desc_sb_burn_in">Pravidelně posouvá prvky stavového řádku o několik pixelů (Samsung pixel-shift).</string>
     <string name="title_sb_net_speed">Ukazatel rychlosti sítě</string>

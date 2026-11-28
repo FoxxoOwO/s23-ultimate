@@ -636,7 +636,19 @@ public class HookEntry extends XposedModule {
         return ctx.getSharedPreferences(ctx.getPackageName() + "_preferences", Context.MODE_PRIVATE);
     }
 
+    /** Master switch in S23 Enhancer: unlocks the in-Camera toggle and allows skipping chains. */
+    private boolean isSkipPostProcFeatureEnabled() {
+        return isPrefAppCtx(PREF_CAM_SKIP_POSTPROC, false);
+    }
+
+    /**
+     * Effective skip state: only active when the master switch in S23 Enhancer is enabled AND
+     * the in-Camera settings switch (s23enh_skip_postproc) is turned ON (default false).
+     */
     private boolean isSkipPostProcEnabled() {
+        if (!isSkipPostProcFeatureEnabled()) {
+            return false;
+        }
         Context ctx = currentApp();
         if (ctx != null) {
             try {
@@ -648,23 +660,50 @@ public class HookEntry extends XposedModule {
             } catch (Throwable ignored) {
             }
         }
-        return isPrefAppCtx(PREF_CAM_SKIP_POSTPROC, false);
+        return false;
+    }
+
+    private Class<?> resolveCameraSettingsFragmentClass(ClassLoader cl) {
+        try {
+            Class<?> actCls = cl.loadClass("com.sec.android.app.camera.setting.CameraSettingActivity");
+            Class<?> prefFragCls = cl.loadClass("androidx.preference.PreferenceFragmentCompat");
+            for (Field f : actCls.getDeclaredFields()) {
+                if (prefFragCls.isAssignableFrom(f.getType())) {
+                    return f.getType();
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        try {
+            return cl.loadClass("sc.p1");
+        } catch (Throwable ignored) {
+            return null;
+        }
     }
 
     /**
-     * Adds a switch to the Camera settings screen. The switch is non-persistent (androidx would
-     * otherwise freeze the mirrored companion value into Camera prefs on first render), so the
-     * change listener stores it explicitly and it becomes authoritative.
+     * Adds a switch to the Camera settings screen when enabled in S23 Enhancer.
+     * The switch is non-persistent, so the change listener stores it explicitly in Camera prefs.
      */
     private void hookCameraSettingsToggle(ClassLoader cl) {
         try {
-            Class<?> fragCls = cl.loadClass("sc.p1");
+            Class<?> fragCls = resolveCameraSettingsFragmentClass(cl);
+            if (fragCls == null) {
+                Log.w(TAG, "Camera settings fragment class not found");
+                return;
+            }
             hookAllMethods(fragCls, "onCreatePreferences", chain -> {
                 Object result = chain.proceed();
                 try {
                     Object fragment = chain.getThisObject();
                     Object screen = fragment.getClass().getMethod("getPreferenceScreen").invoke(fragment);
-                    if (screen != null) addSkipPostProcPref(cl, fragment, screen);
+                    if (screen != null) {
+                        if (isSkipPostProcFeatureEnabled()) {
+                            addSkipPostProcPref(cl, fragment, screen);
+                        } else {
+                            removeSkipPostProcPref(cl, screen);
+                        }
+                    }
                 } catch (Throwable t) {
                     Log.w(TAG, "Skip-postproc switch injection failed: " + t);
                 }
@@ -675,14 +714,36 @@ public class HookEntry extends XposedModule {
             hookAllMethods(fragCls, "onResume", chain -> {
                 Object result = chain.proceed();
                 try {
-                    attachSkipPrefListener(cl, chain.getThisObject());
+                    Object fragment = chain.getThisObject();
+                    Object screen = fragment.getClass().getMethod("getPreferenceScreen").invoke(fragment);
+                    if (screen != null) {
+                        if (isSkipPostProcFeatureEnabled()) {
+                            addSkipPostProcPref(cl, fragment, screen);
+                            attachSkipPrefListener(cl, fragment);
+                        } else {
+                            removeSkipPostProcPref(cl, screen);
+                        }
+                    }
                 } catch (Throwable ignored) {
                 }
                 return result;
             });
-            Log.i(TAG, "Hooked Camera settings screen for skip-post-processing switch");
+            Log.i(TAG, "Hooked Camera settings screen (" + fragCls.getName() + ") for skip-post-processing switch");
         } catch (Throwable t) {
             Log.w(TAG, "Camera settings screen not found: " + t.getMessage());
+        }
+    }
+
+    private void removeSkipPostProcPref(ClassLoader cl, Object screen) throws Throwable {
+        Class<?> groupCls = cl.loadClass("androidx.preference.PreferenceGroup");
+        Object pref = groupCls.getMethod("findPreference", CharSequence.class).invoke(screen, CAM_UI_PREF_KEY);
+        if (pref == null) return;
+        Class<?> prefCls = cl.loadClass("androidx.preference.Preference");
+        Object parent = prefCls.getMethod("getParent").invoke(pref);
+        if (parent != null) {
+            groupCls.getMethod("removePreference", prefCls).invoke(parent, pref);
+        } else {
+            groupCls.getMethod("removePreference", prefCls).invoke(screen, pref);
         }
     }
 
@@ -694,12 +755,15 @@ public class HookEntry extends XposedModule {
                 .getMethod("getContext").invoke(fragment);
         if (ctx == null) return;
 
+        boolean cs = isCzech(ctx);
         Class<?> prefCls = cl.loadClass("androidx.preference.SwitchPreferenceCompat");
         Object pref = prefCls.getConstructor(Context.class).newInstance(ctx);
         prefCls.getMethod("setKey", String.class).invoke(pref, CAM_UI_PREF_KEY);
-        prefCls.getMethod("setTitle", CharSequence.class).invoke(pref, "Skip post-processing");
+        prefCls.getMethod("setTitle", CharSequence.class).invoke(pref,
+                cs ? "P\u0159esko\u010Dit post-procesing" : "Skip post-processing");
         prefCls.getMethod("setSummary", CharSequence.class).invoke(pref,
-                "Photos bypass noise reduction, HDR, AI ISP and other Samsung processing. Relaunch Camera to apply.");
+                cs ? "Fotky p\u0159esko\u010D\u00ED redukci \u0161umu, HDR, AI ISP a dal\u0161\u00ED zpracov\u00E1n\u00ED Samsung. Projev\u00ED se okam\u017Eit\u011B u dal\u0161\u00EDch sn\u00EDmk\u016F."
+                   : "Photos bypass noise reduction, HDR, AI ISP and other Samsung processing. Takes effect immediately for new photos.");
         prefCls.getMethod("setPersistent", boolean.class).invoke(pref, false);
         prefCls.getMethod("setChecked", boolean.class).invoke(pref, isSkipPostProcEnabled());
 
@@ -757,7 +821,8 @@ public class HookEntry extends XposedModule {
                         if (mLoggedSkippedChains.add((String) name)) {
                             Log.i(TAG, "Post-processing chain skipped: " + name);
                         }
-                        return null; // do not enable -> chain passes data through
+                        // Force mEnabled = false (NodeChain defaults mEnabled to true).
+                        return chain.proceed(new Object[]{Boolean.FALSE});
                     }
                 } catch (Throwable ignored) {
                 }

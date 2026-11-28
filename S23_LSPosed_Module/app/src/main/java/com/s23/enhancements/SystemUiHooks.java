@@ -66,6 +66,7 @@ final class SystemUiHooks {
     private static final String PREF_SB_MAX_NOTIF_ICONS = "pref_sb_max_notif_icons";
     private static final String PREF_SB_ONE_CONN_ICON = "pref_sb_one_connection_icon";
     private static final String PREF_SB_BACK_BUTTON = "pref_sb_back_button";
+    private static final String PREF_SB_HIDE_BATTERY_PCT = "pref_sb_hide_battery_pct";
     private static final String PREF_SB_BURN_IN = "pref_sb_burn_in_protect";
     private static final String PREF_SB_NET_SPEED = "pref_sb_net_speed";
     private static final String PREF_SB_NET_SPEED_MODE = "pref_sb_net_speed_mode";
@@ -103,6 +104,7 @@ final class SystemUiHooks {
     private static volatile boolean sPrefTapVibrate = true;
     private static volatile int sPrefTapVibrateStrength = 1;
     private static volatile boolean sPrefDoubleTapSleep = false;
+    private static volatile boolean sPrefHideBatteryPct = false;
     private static final ConcurrentHashMap<String, String> sPrefActions = new ConcurrentHashMap<>();
 
     // Cached status bar child views
@@ -193,6 +195,7 @@ final class SystemUiHooks {
         sModule = module;
 
         hookBatteryController(module, cl);
+        hookBatteryPercent(module, cl);
         hookNotifications(module, cl);
         hookMaxNotificationIcons(module, cl);
         hookItemSpacing(module, cl);
@@ -217,7 +220,43 @@ final class SystemUiHooks {
         }
     }
 
-    // ------------------------------------------------------------------ 2. Notifications
+    // ------------------------------------------------------------------ 2. Battery percentage hide
+
+    private static void hookBatteryPercent(HookEntry module, ClassLoader cl) {
+        // Hook SamsungBatteryMeterDrawable#shouldShowPercentageIcon → force false when pref enabled
+        try {
+            Class<?> cls = cl.loadClass("com.android.systemui.battery.SamsungBatteryMeterDrawable");
+            module.hookAllMethods(cls, "shouldShowPercentageIcon", chain -> {
+                if (sPrefHideBatteryPct) return false;
+                return chain.proceed();
+            });
+            Log.i(TAG, "Hooked SamsungBatteryMeterDrawable#shouldShowPercentageIcon");
+        } catch (Throwable t) {
+            Log.w(TAG, "SamsungBatteryMeterDrawable pct hook failed: " + t.getMessage());
+        }
+
+        // Hook BatteryMeterView#updateShowPercent → also hide the external percent TextView
+        try {
+            Class<?> cls = cl.loadClass("com.android.systemui.battery.BatteryMeterView");
+            module.hookAllMethods(cls, "updateShowPercent", chain -> {
+                chain.proceed();
+                if (sPrefHideBatteryPct) {
+                    try {
+                        Field f = cls.getDeclaredField("mBatteryPercentView");
+                        f.setAccessible(true);
+                        View v = (View) f.get(chain.getThisObject());
+                        if (v != null) v.setVisibility(View.GONE);
+                    } catch (Throwable ignored) {}
+                }
+                return null;
+            });
+            Log.i(TAG, "Hooked BatteryMeterView#updateShowPercent");
+        } catch (Throwable t) {
+            Log.w(TAG, "BatteryMeterView pct hook failed: " + t.getMessage());
+        }
+    }
+
+    // ------------------------------------------------------------------ 3. Notifications
 
     private static void hookNotifications(HookEntry module, ClassLoader cl) {
         try {
@@ -539,6 +578,7 @@ final class SystemUiHooks {
         sPrefTapVibrate = mod.isPref(PREF_SB_TAP_VIBRATE, true);
         sPrefTapVibrateStrength = mod.getIntPref(PREF_SB_TAP_VIBRATE_STRENGTH, 1);
         sPrefDoubleTapSleep = mod.isPref(PREF_SB_DOUBLE_TAP_SLEEP, false);
+        sPrefHideBatteryPct = mod.isPref(PREF_SB_HIDE_BATTERY_PCT, false);
         for (String target : ACTION_TARGETS) {
             String tapKey = PREF_SB_TAP_PREFIX + target;
             String longKey = PREF_SB_LONG_PREFIX + target;

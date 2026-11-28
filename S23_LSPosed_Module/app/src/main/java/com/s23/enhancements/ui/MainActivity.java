@@ -92,6 +92,7 @@ public class MainActivity extends AppCompatActivity {
     public static final String KEY_SB_HIDDEN_ICONS = "pref_sb_hidden_icons";
     public static final String KEY_SB_ONE_CONN_ICON = "pref_sb_one_connection_icon";
     public static final String KEY_SB_BACK_BUTTON = "pref_sb_back_button";
+    public static final String KEY_SB_HIDE_BATTERY_PCT = "pref_sb_hide_battery_pct";
     public static final String KEY_SB_BURN_IN = "pref_sb_burn_in_protect";
     public static final String KEY_SB_NET_SPEED = "pref_sb_net_speed";
     public static final String KEY_SB_NET_SPEED_MODE = "pref_sb_net_speed_mode";
@@ -173,6 +174,7 @@ public class MainActivity extends AppCompatActivity {
             KEY_SB_ONE_CONN_ICON, KEY_SB_BACK_BUTTON, KEY_SB_BURN_IN,
             KEY_SB_NET_SPEED, KEY_SB_NET_SPEED_AUTO_HIDE,
             KEY_SB_DOUBLE_TAP_SLEEP, KEY_SB_TAP_VIBRATE,
+            KEY_SB_HIDE_BATTERY_PCT,
             KEY_NOTIF_AUTO_EXPAND, KEY_NOTIF_GROUPS_ONE_TAP, KEY_NOTIF_KEEP_SILENT_SMALL
     };
 
@@ -271,6 +273,7 @@ public class MainActivity extends AppCompatActivity {
                 || KEY_SB_BACK_BUTTON.equals(key)
                 || KEY_SB_NET_SPEED.equals(key)
                 || KEY_SB_DOUBLE_TAP_SLEEP.equals(key)
+                || KEY_SB_HIDE_BATTERY_PCT.equals(key)
                 || KEY_NOTIF_AUTO_EXPAND.equals(key)
                 || KEY_NOTIF_GROUPS_ONE_TAP.equals(key)) {
             return false;
@@ -604,6 +607,7 @@ public class MainActivity extends AppCompatActivity {
 
             switchPref(cat, ctx, KEY_SB_ONE_CONN_ICON, R.string.title_sb_one_conn, R.string.desc_sb_one_conn, false);
             switchPref(cat, ctx, KEY_SB_BACK_BUTTON, R.string.title_sb_back_btn, R.string.desc_sb_back_btn, false);
+            switchPref(cat, ctx, KEY_SB_HIDE_BATTERY_PCT, R.string.title_sb_hide_battery_pct, R.string.desc_sb_hide_battery_pct, false);
             switchPref(cat, ctx, KEY_SB_BURN_IN, R.string.title_sb_burn_in, R.string.desc_sb_burn_in, true);
             switchPref(cat, ctx, KEY_SB_NET_SPEED, R.string.title_sb_net_speed, R.string.desc_sb_net_speed, false);
 
