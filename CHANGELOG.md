@@ -10,6 +10,9 @@ All notable changes to **S23 Enhancer** are documented in this file.
 - Removed the `SamsungBatteryMeterDrawable#shouldShowPercentageIcon` override. It made One UI draw the battery as a plain circle whenever the percentage was hidden, which is why the pill sometimes lost its shape.
 - The companion app writes `s23enh_cmd_restart_systemui` after the hide-percentage toggle or a pill-width change, because Compose does not remeasure the status bar on a preference write alone.
 
+### Changed
+- **Status Bar → Restart SystemUI** now states that the restart needs root access granted to S23 Enhancer, both in the row summary and in the confirmation dialog.
+
 ## [3.0] - 2026-11-28
 
 ### Added

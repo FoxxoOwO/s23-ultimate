@@ -286,8 +286,8 @@
 
     <!-- Restart SystemUI & Auto-Updater -->
     <string name="row_restart_systemui">Restartovat SystemUI</string>
-    <string name="val_restart_systemui">Použít změny</string>
-    <string name="confirm_restart_systemui_msg">Restartuje pouze SystemUI (telefon se nerestartuje). Obrazovka krátce problikne.</string>
+    <string name="val_restart_systemui">Použít změny — vyžaduje root oprávnění pro S23 Enhancer</string>
+    <string name="confirm_restart_systemui_msg">Restartuje pouze SystemUI (telefon se nerestartuje). Obrazovka krátce problikne. Restart vyžaduje root oprávnění pro S23 Enhancer — povolte ho v Magisk/KernelSU.</string>
     <string name="action_restart">Restartovat</string>
     <string name="toast_restarting_systemui">Restartuji SystemUI…</string>
 

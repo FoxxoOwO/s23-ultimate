@@ -286,8 +286,8 @@
 
     <!-- Restart SystemUI & Auto-Updater -->
     <string name="row_restart_systemui">Restart SystemUI</string>
-    <string name="val_restart_systemui">Apply changes</string>
-    <string name="confirm_restart_systemui_msg">Only restarts SystemUI (the phone does not reboot). The screen will flash briefly.</string>
+    <string name="val_restart_systemui">Apply changes — needs root access for S23 Enhancer</string>
+    <string name="confirm_restart_systemui_msg">Only restarts SystemUI (the phone does not reboot). The screen will flash briefly. The restart needs root access for S23 Enhancer — grant it in Magisk/KernelSU when asked.</string>
     <string name="action_restart">Restart</string>
     <string name="toast_restarting_systemui">Restarting SystemUI…</string>
 
