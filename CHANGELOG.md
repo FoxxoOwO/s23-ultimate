@@ -2,6 +2,15 @@
 
 All notable changes to **S23 Enhancer** are documented in this file.
 
+## [3.0] - 2026-11-28
+
+### Added
+- **Camera → Skip post-processing** (`pref_camera_skip_postproc`, [HookEntry#hookCameraPostProcessing](S23_LSPosed_Module/app/src/main/java/com/s23/enhancements/HookEntry.java)):
+  - Skips Samsung Camera 17's still-picture post-processing (HDR fusion, AI ISP, super resolution, de-flicker, face restoration, beauty, selfie correction) so the saved photo keeps the raw ISP/JPEG output.
+  - Hooks `com.samsung.android.camera.core2.node.NodeChain#enableNodeChain` and refuses to enable the 25 processing chains from `NodeChainKeyContainer`; a disabled chain passes its input through unchanged. Encoding, EXIF, watermark and filter chains stay enabled, and video recording is unaffected.
+  - Pref is read through the app's own `ActivityThread#currentApplication` context (`isPrefAppCtx`), because `ActivityThread#getSystemContext` belongs to package `android` and every `Settings.Global` read through it throws `SecurityException: Given calling package android does not match caller's uid` in app processes.
+  - Added toggle in the **Camera** section of [MainActivity](S23_LSPosed_Module/app/src/main/java/com/s23/enhancements/ui/MainActivity.java) with English and Czech (`values-cs`) strings.
+
 ## [2.9] - 2026-11-28
 
 ### Added

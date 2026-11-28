@@ -52,6 +52,7 @@ public class MainActivity extends AppCompatActivity {
     public static final String KEY_CAMERA_4K120_SLOWMO = "pref_camera_4k120_slowmo";
     public static final String KEY_CAMERA_JPEG_100 = "pref_camera_jpeg_100";
     public static final String KEY_CAMERA_SHUTTER_MUTE = "pref_camera_shutter_mute";
+    public static final String KEY_CAMERA_SKIP_POSTPROC = "pref_camera_skip_postproc";
 
     // Display
     public static final String KEY_DISPLAY_OUTDOOR = "pref_display_outdoor_mode";
@@ -160,7 +161,7 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String[] ALL_KEYS = {
             KEY_CAMERA_LOG_VIDEO, KEY_CAMERA_4K60_LENSES, KEY_CAMERA_4K120_SLOWMO, KEY_CAMERA_JPEG_100,
-            KEY_CAMERA_SHUTTER_MUTE,
+            KEY_CAMERA_SHUTTER_MUTE, KEY_CAMERA_SKIP_POSTPROC,
             KEY_DISPLAY_OUTDOOR, KEY_DISPLAY_SCREEN_MODE, KEY_DISPLAY_SCREEN_TIMEOUT,
             KEY_DISPLAY_ACTION_TIMEOUT, KEY_DISPLAY_EAD, KEY_DISPLAY_FONTS,
             KEY_LOCKSCREEN_CHARGING_INFO,
@@ -265,7 +266,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private static boolean defaultFor(String key) {
-        if (KEY_SB_ONE_CONN_ICON.equals(key)
+        if (KEY_CAMERA_SKIP_POSTPROC.equals(key)
+                || KEY_SB_ONE_CONN_ICON.equals(key)
                 || KEY_SB_BACK_BUTTON.equals(key)
                 || KEY_SB_NET_SPEED.equals(key)
                 || KEY_SB_DOUBLE_TAP_SLEEP.equals(key)
@@ -488,6 +490,7 @@ public class MainActivity extends AppCompatActivity {
             switchPref(cat, ctx, KEY_CAMERA_4K120_SLOWMO, R.string.title_camera_4k120_slowmo, R.string.desc_camera_4k120_slowmo, true);
             switchPref(cat, ctx, KEY_CAMERA_JPEG_100, R.string.title_camera_jpeg_100, R.string.desc_camera_jpeg_100, true);
             switchPref(cat, ctx, KEY_CAMERA_SHUTTER_MUTE, R.string.title_camera_shutter_mute, R.string.desc_camera_shutter_mute, true);
+            switchPref(cat, ctx, KEY_CAMERA_SKIP_POSTPROC, R.string.title_camera_skip_postproc, R.string.desc_camera_skip_postproc, false);
         }
 
         private void addDisplaySection(PreferenceScreen screen, Context ctx) {

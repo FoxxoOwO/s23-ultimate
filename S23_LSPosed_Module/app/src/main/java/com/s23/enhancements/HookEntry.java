@@ -42,6 +42,19 @@ public class HookEntry extends XposedModule {
     /** Camera: expose UHD 120 fps in Slow motion (stock feature map keeps it pro_video only). */
     private static final String PREF_CAM_4K120_SLOWMO = "pref_camera_4k120_slowmo";
 
+    /** Camera: skip the picture post-processing node chains (HDR fusion, AI ISP, SR, beauty...). */
+    private static final String PREF_CAM_SKIP_POSTPROC = "pref_camera_skip_postproc";
+
+    /** core2 NodeChain keys that only alter pixels; a disabled chain passes its input through. */
+    private static final java.util.Set<String> POST_PROC_CHAINS = new java.util.HashSet<>(Arrays.asList(
+            "AI_ISP", "AI_ISP_ZOOM", "AI_HIGH_RES", "AI_CLEAR_ZOOM", "HIGH_RES", "FUSION_HIGH_RES",
+            "SR", "UW_SR", "RAW_SR", "MACRO_RAW_SR", "TETRA_SR", "SUPER_NIGHT",
+            "LL_HDR", "MF_HDR", "AEB_HDR", "HYBRID_HDR", "SS_HDR", "HIFI_LLS",
+            "LOCAL_TM", "DE_FLICKER", "DE_FLICKER_HDR", "SIE", "FACE_RESTORATION",
+            "BEAUTY", "SELFIE_CORRECTION"));
+    private final java.util.Set<String> mLoggedSkippedChains =
+            java.util.concurrent.ConcurrentHashMap.newKeySet();
+
     /** Battery info: unlock the EU-regulatory rows (health, cycles, dates) in Settings. */
     private static final String PREF_BATTERY_INFO = "pref_system_battery_info";
 
@@ -236,6 +249,7 @@ public class HookEntry extends XposedModule {
                 hookCamera(cl);
                 hookCameraJpeg(cl);
                 hookCameraShutterSound(cl);
+                hookCameraPostProcessing(cl);
             } else if ("com.samsung.android.incallui".equals(pkg) ||
                        "com.samsung.android.dialer".equals(pkg) ||
                        "com.samsung.android.app.telephonyui".equals(pkg) ||
@@ -579,6 +593,57 @@ public class HookEntry extends XposedModule {
                 return chain.proceed();
             });
         } catch (Throwable ignored) {}
+    }
+
+    /**
+     * Camera 17 (One UI 9) picture pipeline: every enhancement stage is a core2 NodeChain that
+     * NodeControllerComposer switches on via NodeChain#enableNodeChain(true). A disabled chain
+     * forwards its input unchanged, so not enabling it leaves the raw ISP/JPEG result only.
+     */
+    /**
+     * Settings.Global mirror read with the hooked app's own uid. systemContext() belongs to the
+     * "android" package, so reading Settings through it throws SecurityException in app processes.
+     */
+    private boolean isPrefAppCtx(String key, boolean defVal) {
+        try {
+            Object app = Class.forName("android.app.ActivityThread")
+                    .getMethod("currentApplication").invoke(null);
+            if (app instanceof Context) {
+                int v = Settings.Global.getInt(((Context) app).getContentResolver(), GLOBAL_PREFIX + key, -1);
+                if (v >= 0) return v != 0;
+            }
+        } catch (Throwable ignored) {
+        }
+        return isPref(key, defVal);
+    }
+    private void hookCameraPostProcessing(ClassLoader cl) {
+        try {
+            Class<?> chainCls = cl.loadClass("com.samsung.android.camera.core2.node.NodeChain");
+            // NodeChain$Key is public; the runtime instances are package-private anonymous subclasses,
+            // so getName must be resolved on the public type or invoke() throws IllegalAccessException.
+            final Method getName = cl.loadClass("com.samsung.android.camera.core2.node.NodeChain$Key")
+                    .getMethod("getName");
+            final Method getKey = chainCls.getMethod("getKey");
+            hookAllMethods(chainCls, "enableNodeChain", chain -> {
+                if (!isPrefAppCtx(PREF_CAM_SKIP_POSTPROC, false)) return chain.proceed();
+                try {
+                    Object key = getKey.invoke(chain.getThisObject());
+                    Object name = key == null ? null : getName.invoke(key);
+
+                    if (name instanceof String && POST_PROC_CHAINS.contains(name)) {
+                        if (mLoggedSkippedChains.add((String) name)) {
+                            Log.i(TAG, "Post-processing chain skipped: " + name);
+                        }
+                        return null; // do not enable -> chain passes data through
+                    }
+                } catch (Throwable ignored) {
+                }
+                return chain.proceed();
+            });
+            Log.i(TAG, "Hooked NodeChain.enableNodeChain for post-processing skip");
+        } catch (Throwable t) {
+            Log.w(TAG, "Failed to hook post-processing chains: " + t.getMessage());
+        }
     }
 
     /**
