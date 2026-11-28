@@ -11,6 +11,15 @@ All notable changes to **S23 Enhancer** are documented in this file.
   - Pref is read through the app's own `ActivityThread#currentApplication` context (`isPrefAppCtx`), because `ActivityThread#getSystemContext` belongs to package `android` and every `Settings.Global` read through it throws `SecurityException: Given calling package android does not match caller's uid` in app processes.
   - Added toggle in the **Camera** section of [MainActivity](S23_LSPosed_Module/app/src/main/java/com/s23/enhancements/ui/MainActivity.java) with English and Czech (`values-cs`) strings.
 
+## [3.1] - 2026-11-28
+
+### Added
+- **Camera settings → Skip post-processing switch** ([HookEntry#hookCameraSettingsToggle](S23_LSPosed_Module/app/src/main/java/com/s23/enhancements/HookEntry.java)):
+  - The bypass is now controllable from inside the Camera app: the switch is injected into the Camera settings screen (`sc.p1#onCreatePreferences`) and stored in the Camera's own preferences (`s23enh_skip_postproc` in `com.sec.android.app.camera_preferences`), so it takes effect without the companion app.
+  - `onResume` re-attaches the row's click listener, because the Camera settings fragment overwrites the listener of every row with its own and silently drops unknown keys.
+  - The stored value is read tolerantly (Boolean or String), since Samsung's settings framework may persist it as a string.
+  - The companion-app toggle keeps working as the default until the in-camera switch is used; its value wins afterwards.
+
 ## [2.9] - 2026-11-28
 
 ### Added

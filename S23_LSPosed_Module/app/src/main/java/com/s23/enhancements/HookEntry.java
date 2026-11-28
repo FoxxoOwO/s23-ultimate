@@ -45,6 +45,9 @@ public class HookEntry extends XposedModule {
     /** Camera: skip the picture post-processing node chains (HDR fusion, AI ISP, SR, beauty...). */
     private static final String PREF_CAM_SKIP_POSTPROC = "pref_camera_skip_postproc";
 
+    /** Key of the switch injected into the Camera settings screen (Camera's own prefs). */
+    private static final String CAM_UI_PREF_KEY = "s23enh_skip_postproc";
+
     /** core2 NodeChain keys that only alter pixels; a disabled chain passes its input through. */
     private static final java.util.Set<String> POST_PROC_CHAINS = new java.util.HashSet<>(Arrays.asList(
             "AI_ISP", "AI_ISP_ZOOM", "AI_HIGH_RES", "AI_CLEAR_ZOOM", "HIGH_RES", "FUSION_HIGH_RES",
@@ -250,6 +253,7 @@ public class HookEntry extends XposedModule {
                 hookCameraJpeg(cl);
                 hookCameraShutterSound(cl);
                 hookCameraPostProcessing(cl);
+                hookCameraSettingsToggle(cl);
             } else if ("com.samsung.android.incallui".equals(pkg) ||
                        "com.samsung.android.dialer".equals(pkg) ||
                        "com.samsung.android.app.telephonyui".equals(pkg) ||
@@ -605,16 +609,135 @@ public class HookEntry extends XposedModule {
      * "android" package, so reading Settings through it throws SecurityException in app processes.
      */
     private boolean isPrefAppCtx(String key, boolean defVal) {
+        Context ctx = currentApp();
+        if (ctx != null) {
+            try {
+                int v = Settings.Global.getInt(ctx.getContentResolver(), GLOBAL_PREFIX + key, -1);
+                if (v >= 0) return v != 0;
+            } catch (Throwable ignored) {
+            }
+        }
+        return isPref(key, defVal);
+    }
+
+    /** Application object of the hooked process, or null outside an app process. */
+    private static Context currentApp() {
         try {
             Object app = Class.forName("android.app.ActivityThread")
                     .getMethod("currentApplication").invoke(null);
-            if (app instanceof Context) {
-                int v = Settings.Global.getInt(((Context) app).getContentResolver(), GLOBAL_PREFIX + key, -1);
-                if (v >= 0) return v != 0;
-            }
+            if (app instanceof Context) return (Context) app;
         } catch (Throwable ignored) {
         }
-        return isPref(key, defVal);
+        return null;
+    }
+
+    /** Camera-app prefs are writable by the Camera settings switch; they win over the mirror. */
+    private SharedPreferences cameraPrefs(Context ctx) {
+        return ctx.getSharedPreferences(ctx.getPackageName() + "_preferences", Context.MODE_PRIVATE);
+    }
+
+    private boolean isSkipPostProcEnabled() {
+        Context ctx = currentApp();
+        if (ctx != null) {
+            try {
+                SharedPreferences sp = cameraPrefs(ctx);
+                Object raw = sp.getAll().get(CAM_UI_PREF_KEY);
+                // Samsung's settings framework may store the value as a String.
+                if (raw instanceof Boolean) return (Boolean) raw;
+                if (raw != null) return "true".equals(String.valueOf(raw));
+            } catch (Throwable ignored) {
+            }
+        }
+        return isPrefAppCtx(PREF_CAM_SKIP_POSTPROC, false);
+    }
+
+    /**
+     * Adds a switch to the Camera settings screen. The switch is non-persistent (androidx would
+     * otherwise freeze the mirrored companion value into Camera prefs on first render), so the
+     * change listener stores it explicitly and it becomes authoritative.
+     */
+    private void hookCameraSettingsToggle(ClassLoader cl) {
+        try {
+            Class<?> fragCls = cl.loadClass("sc.p1");
+            hookAllMethods(fragCls, "onCreatePreferences", chain -> {
+                Object result = chain.proceed();
+                try {
+                    Object fragment = chain.getThisObject();
+                    Object screen = fragment.getClass().getMethod("getPreferenceScreen").invoke(fragment);
+                    if (screen != null) addSkipPostProcPref(cl, fragment, screen);
+                } catch (Throwable t) {
+                    Log.w(TAG, "Skip-postproc switch injection failed: " + t);
+                }
+                return result;
+            });
+            // The Camera settings fragment assigns its own OnPreferenceClickListener to every row
+            // after onCreatePreferences, so ours has to be re-attached later to win the field.
+            hookAllMethods(fragCls, "onResume", chain -> {
+                Object result = chain.proceed();
+                try {
+                    attachSkipPrefListener(cl, chain.getThisObject());
+                } catch (Throwable ignored) {
+                }
+                return result;
+            });
+            Log.i(TAG, "Hooked Camera settings screen for skip-post-processing switch");
+        } catch (Throwable t) {
+            Log.w(TAG, "Camera settings screen not found: " + t.getMessage());
+        }
+    }
+
+    private void addSkipPostProcPref(ClassLoader cl, Object fragment, Object screen) throws Throwable {
+        Class<?> groupCls = cl.loadClass("androidx.preference.PreferenceGroup");
+        if (groupCls.getMethod("findPreference", CharSequence.class).invoke(screen, CAM_UI_PREF_KEY) != null) return;
+
+        Context ctx = (Context) cl.loadClass("androidx.fragment.app.Fragment")
+                .getMethod("getContext").invoke(fragment);
+        if (ctx == null) return;
+
+        Class<?> prefCls = cl.loadClass("androidx.preference.SwitchPreferenceCompat");
+        Object pref = prefCls.getConstructor(Context.class).newInstance(ctx);
+        prefCls.getMethod("setKey", String.class).invoke(pref, CAM_UI_PREF_KEY);
+        prefCls.getMethod("setTitle", CharSequence.class).invoke(pref, "Skip post-processing");
+        prefCls.getMethod("setSummary", CharSequence.class).invoke(pref,
+                "Photos bypass noise reduction, HDR, AI ISP and other Samsung processing. Relaunch Camera to apply.");
+        prefCls.getMethod("setPersistent", boolean.class).invoke(pref, false);
+        prefCls.getMethod("setChecked", boolean.class).invoke(pref, isSkipPostProcEnabled());
+
+        Class<?> catCls = cl.loadClass("androidx.preference.PreferenceCategory");
+        Object target = screen;
+        int count = (Integer) groupCls.getMethod("getPreferenceCount").invoke(screen);
+        for (int i = 0; i < count; i++) {
+            Object p = groupCls.getMethod("getPreference", int.class).invoke(screen, i);
+            if (catCls.isInstance(p)) { target = p; break; }
+        }
+        groupCls.getMethod("addPreference", cl.loadClass("androidx.preference.Preference"))
+                .invoke(target, pref);
+    }
+
+    private void attachSkipPrefListener(ClassLoader cl, Object fragment) throws Throwable {
+        Object screen = fragment.getClass().getMethod("getPreferenceScreen").invoke(fragment);
+        if (screen == null) return;
+        Class<?> groupCls = cl.loadClass("androidx.preference.PreferenceGroup");
+        Object pref = groupCls.getMethod("findPreference", CharSequence.class).invoke(screen, CAM_UI_PREF_KEY);
+        if (pref == null) return;
+        Context ctx = (Context) cl.loadClass("androidx.fragment.app.Fragment")
+                .getMethod("getContext").invoke(fragment);
+        if (ctx == null) return;
+        final Context appCtx = ctx.getApplicationContext() != null ? ctx.getApplicationContext() : ctx;
+        Class<?> prefCls = cl.loadClass("androidx.preference.Preference");
+        prefCls.getMethod("setOnPreferenceClickListener",
+                cl.loadClass("androidx.preference.Preference$OnPreferenceClickListener"))
+                .invoke(pref, java.lang.reflect.Proxy.newProxyInstance(cl,
+                        new Class<?>[]{cl.loadClass("androidx.preference.Preference$OnPreferenceClickListener")},
+                        (proxy, method, args) -> {
+                            if (!"onPreferenceClick".equals(method.getName())) return false;
+                            boolean next = !isSkipPostProcEnabled();
+                            cameraPrefs(appCtx).edit().putBoolean(CAM_UI_PREF_KEY, next).apply();
+                            Class<?> switchCls = cl.loadClass("androidx.preference.TwoStatePreference");
+                            switchCls.getMethod("setChecked", boolean.class).invoke(pref, next);
+                            Log.i(TAG, "Camera settings: skip post-processing = " + next);
+                            return true;
+                        }));
     }
     private void hookCameraPostProcessing(ClassLoader cl) {
         try {
@@ -625,7 +748,7 @@ public class HookEntry extends XposedModule {
                     .getMethod("getName");
             final Method getKey = chainCls.getMethod("getKey");
             hookAllMethods(chainCls, "enableNodeChain", chain -> {
-                if (!isPrefAppCtx(PREF_CAM_SKIP_POSTPROC, false)) return chain.proceed();
+                if (!isSkipPostProcEnabled()) return chain.proceed();
                 try {
                     Object key = getKey.invoke(chain.getThisObject());
                     Object name = key == null ? null : getName.invoke(key);
